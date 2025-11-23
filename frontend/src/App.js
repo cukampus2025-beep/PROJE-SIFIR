@@ -127,7 +127,7 @@ function AnaSayfa() {
         <div className="center-col">
           {!kullanici ? ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 15px 0' }}>Hoş Geldin</h2> <p style={{ color: '#555', marginBottom: '30px', fontSize: '15px' }}>Yorum yapmak için giriş yapmalısın.</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '220px', margin: '0 auto' }}> <button onClick={() => { setModalTip('giris'); setModalAcik(true); }} className="login-btn">Giriş Yap</button> <button onClick={() => { setModalTip('kayit'); setModalAcik(true); }} className="register-btn">Kayıt Ol</button> </div> </> ) : ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 10px 0' }}>{kullanici.nickname}</h2> <p style={{ color: '#555', marginBottom: '30px' }}>Giriş yaptın.</p> <button onClick={cikisYap} className="logout-btn">Çıkış Yap</button> </> )}
           <div className="donation-bar-container">
-            <p className="donation-text">2025 31 Aralık tarihine kadar her 600 yorum için<br/> Darüşşafaka Cemiyetine 200 lira bağış!</p>
+            <p className="donation-text">2025 31 Aralık tarihine kadar her 200 yorum için<br/> Darüşşafaka Cemiyetine 200 lira bağış!</p>
             <div className="progress-bg"><div className="progress-fill" style={{ width: `${barYuzdesi}%` }}></div></div>
             <small style={{ color: '#777' }}>{toplamYorum} / 600 Yorum</small>
           </div>
