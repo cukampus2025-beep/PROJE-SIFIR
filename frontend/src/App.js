@@ -30,7 +30,7 @@ const AdminPanel = () => {
     useEffect(() => { veriCek(); }, []);
     const sil = (tur, id) => { if(!window.confirm("Sil?")) return; fetch(`${API_URL}/admin/sil/${tur}/${id}`, { method: 'DELETE' }).then(() => { veriCek(); }); };
     const banla = (nickname) => { if(!nickname || nickname === 'Anonim') return; if(window.confirm(`DİKKAT: ${nickname} banlansın mı?`)) { fetch(`${API_URL}/admin/banla`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname }) }).then(() => alert("Banlandı!")); } };
-    return ( <div style={{padding:40, maxWidth:1000, margin:'0 auto'}}> <h1 style={{color:'#d32f2f', textAlign:'center'}}>👑 Admin Paneli</h1> <div style={{textAlign:'center', marginBottom:30}}><Link to="/" style={{padding:'10px 20px', background:'#eee', borderRadius:5, textDecoration:'none', color:'#333', fontWeight:'bold'}}>Ana Sayfaya Dön</Link></div> <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20}}> <div style={{background:'#fff', padding:15, border:'1px solid #ddd', borderRadius:8}}><h3>📨 Mesajlar</h3>{veriler.mesajlar.map(x=><div key={x.id} style={{borderBottom:'1px solid #eee', padding:'5px 0', display:'flex', justifyContent:'space-between'}}><small>{x.mesaj}</small> <button onClick={()=>sil('mesaj',x.id)}>🗑️</button></div>)}</div> <div style={{background:'#fff', padding:15, border:'1px solid #ddd', borderRadius:8}}><h3>💬 Ders Yorumları</h3>{veriler.ders.map(x => (<div key={x.id} style={{borderBottom:'1px solid #eee', padding:'10px 0', display:'flex', justifyContent:'space-between', alignItems:'center'}}><div style={{fontSize:'0.9em'}}><b>{x.kullanici_adi}</b>: {x.yorum_metni}</div><div><button onClick={()=>banla(x.kullanici_adi)} style={{background:'#333', color:'white', border:'none', padding:'5px', borderRadius:5, marginRight:5, cursor:'pointer', fontSize:'12px'}}>🚫 BAN</button><button onClick={()=>sil('ders',x.id)} style={{background:'#d32f2f', color:'white', border:'none', padding:'5px', borderRadius:5, cursor:'pointer'}}>🗑️</button></div></div>))}</div> <div style={{background:'#fff', padding:15, border:'1px solid #ddd', borderRadius:8}}><h3>🛏️ Yurt Yorumları</h3>{veriler.yurt.map(x => (<div key={x.id} style={{borderBottom:'1px solid #eee', padding:'10px 0', display:'flex', justifyContent:'space-between', alignItems:'center'}}><div style={{fontSize:'0.9em'}}><b>{x.kullanici_adi}</b> ({x.yurt_adi}): {x.yorum_metni}</div><div><button onClick={()=>banla(x.kullanici_adi)} style={{background:'#333', color:'white', border:'none', padding:'5px', borderRadius:5, marginRight:5, cursor:'pointer', fontSize:'12px'}}>🚫 BAN</button><button onClick={()=>sil('yurt',x.id)} style={{background:'#d32f2f', color:'white', border:'none', padding:'5px', borderRadius:5, cursor:'pointer'}}>🗑️</button></div></div>))}</div> <div style={{background:'#fff', padding:15, border:'1px solid #ddd', borderRadius:8}}><h3>🗣️ Forum</h3>{veriler.forum.map(x => (<div key={x.id} style={{borderBottom:'1px solid #eee', padding:'10px 0', display:'flex', justifyContent:'space-between', alignItems:'center'}}><div style={{fontSize:'0.9em'}}><b>{x.kullanici_adi}</b>: {x.mesaj}</div><div><button onClick={()=>banla(x.kullanici_adi)} style={{background:'#333', color:'white', border:'none', padding:'5px', borderRadius:5, marginRight:5, cursor:'pointer', fontSize:'12px'}}>🚫 BAN</button><button onClick={()=>sil('forum',x.id)} style={{background:'#d32f2f', color:'white', border:'none', padding:'5px', borderRadius:5, cursor:'pointer'}}>🗑️</button></div></div>))}</div> </div> </div> );
+    return ( <div style={{padding:40, maxWidth:1000, margin:'0 auto'}}> <h1 style={{color:'#d32f2f', textAlign:'center'}}>👑 Admin Paneli</h1> <div style={{textAlign:'center', marginBottom:30}}><Link to="/" style={{padding:'10px 20px', background:'#eee', borderRadius:5, textDecoration:'none', color:'#333', fontWeight:'bold'}}>Ana Sayfaya Dön</Link></div> <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20}}> <div style={{background:'#fff', padding:15, border:'1px solid #ddd', borderRadius:8}}><h3>📨 Mesajlar</h3>{veriler.mesajlar.map(x=><div key={x.id} style={{borderBottom:'1px solid #eee', padding:'5px 0', display:'flex', justifyContent:'space-between'}}><small>{x.mesaj}</small> <button onClick={()=>sil('mesaj',x.id)}>🗑️</button></div>)}</div> <div style={{background:'#fff', padding:15, border:'1px solid #ddd', borderRadius:8}}><h3>💬 Ders Yorumları</h3>{veriler.ders.map(x => (<div key={x.id} style={{borderBottom:'1px solid #eee', padding:'10px 0', display:'flex', justifyContent:'space-between', alignItems:'center'}}><div style={{fontSize:'0.9em'}}><b>{x.kullanici_adi}</b>: {x.yorum_metni}</div><div><button onClick={()=>banla(x.kullanici_adi)} style={{background:'#333', color:'white', border:'none', padding:'5px', borderRadius:5, marginRight:5, cursor:'pointer', fontSize:'12px'}}>🚫 BAN</button><button onClick={()=>sil('ders',x.id)} style={{background:'#d32f2f', color:'white', border:'none', padding:'5px', borderRadius:5, cursor:'pointer'}}>🗑️</button></div></div>))}</div> <div style={{background:'#fff', padding:15, border:'1px solid #ddd', borderRadius:8}}><h3>🛏️ Yurt Yorumları</h3>{veriler.yurt.map(x => (<div key={x.id} style={{borderBottom:'1px solid #eee', padding:'10px 0', display:'flex', justifyContent:'space-between', alignItems:'center'}}><div style={{fontSize:'0.9em'}}><b>{x.kullanici_adi}</b> ({x.yurt_adi}): {x.yorum_metni}</div><div><button onClick={()=>banla(x.kullanici_adi)} style={{background:'#333', color:'white', border:'none', padding:'5px', borderRadius:5, marginRight:5, cursor:'pointer', fontSize:'12px'}}>🚫 BAN</button><button onClick={()=>sil('yurt',x.id)} style={{background:'#d32f2f', color:'white', border:'none', padding:'5px', borderRadius:5, cursor:'pointer'}}>🗑️</button></div></div>))}</div> <div style={{background:'#fff', padding:15, border:'1px solid #ddd', borderRadius:8}}><h3>🗣️ Forum</h3>{veriler.forum.map(x => (<div key={x.id} style={{borderBottom:'1px solid #eee', padding:'10px 0', display:'flex', justifyContent:'space-between', alignItems:'center'}}><div style={{fontSize:'0.9em'}}><b>{x.kullanici_adi}</b>: {x.mesaj}</div><div><button onClick={()=>banla(x.kullanici_adi)} style={{background:'#333', color:'white', border:'none', padding:'5px', borderRadius:5, marginRight:5, cursor:'pointer', fontSize:'12px'}}>🚫</button><button onClick={()=>sil('forum',x.id)} style={{background:'#d32f2f', color:'white', border:'none', padding:'5px', borderRadius:5, cursor:'pointer'}}>🗑️</button></div></div>))}</div> </div> </div> );
 };
 
 // --- YARDIMCI SAYFALAR ---
@@ -60,9 +60,8 @@ function AnaSayfa() {
 
   const mesajGonder = () => {
     if (!mesaj.trim()) return;
-    fetch(`${API_URL}/iletisim-gonder`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mesaj })
-    }).then(() => { setBilgi("Mesajınız iletildi!"); setMesaj(""); setTimeout(() => { setBilgi(""); setIletisimAcik(false); }, 2000); });
+    fetch(`${API_URL}/iletisim-gonder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mesaj }) })
+    .then(() => { setBilgi("Mesajınız iletildi!"); setMesaj(""); setTimeout(() => { setBilgi(""); setIletisimAcik(false); }, 2000); });
   };
 
   const menuler = [
@@ -74,7 +73,7 @@ function AnaSayfa() {
     { id: 6, title: 'Topluluklar', icon: '🤝', link: '/topluluklar' },
   ];
 
-  // MOBİL MENÜ (3 Çizgiye Tıklayınca Açılan)
+  // --- MOBİL MENÜ BİLEŞENİ (BURADA İLETİŞİM DE VAR) ---
   const MobilMenu = () => (
       <div className="mobile-menu-overlay" onClick={()=>setMobilMenuAcik(false)}>
           <div className="mobile-menu-content" onClick={e=>e.stopPropagation()}>
@@ -82,20 +81,26 @@ function AnaSayfa() {
                 <h3 style={{margin:0, color:'#004aad'}}>Menü</h3>
                 <button className="close-menu" onClick={()=>setMobilMenuAcik(false)}>✖</button>
               </div>
+              
+              {/* Admin Butonu */}
               {kullanici && kullanici.nickname === 'baraykanat' && <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div>}
               
-              {/* Menü elemanları ALT ALTA */}
+              {/* Linkler ALT ALTA */}
               <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
                   {menuler.map(m=><div key={m.id} onClick={()=>{navigate(m.l);setMobilMenuAcik(false)}} className="menu-item"><span>{m.i}</span>{m.t}</div>)}
               </div>
               
               <hr style={{margin:'20px 0', border:'0', borderTop:'1px solid #eee'}}/>
               
+              {/* İletişim Mobilde Menünün İçinde */}
               <h3 style={{margin:'0 0 10px 0', color:'#444'}}>İletişim</h3>
               {!iletisimAcik ? <button onClick={()=>setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> : <div><textarea className="msg-input" value={mesaj} onChange={e=>setMesaj(e.target.value)}/><button onClick={mesajGonder} className="send-btn" style={{width:'100%'}}>Gönder</button></div>}
+              
               {bilgi && <div style={{color:'green', marginTop:5, fontSize:'0.9em', textAlign:'center'}}>{bilgi}</div>}
               
-              <div style={{marginTop:15, textAlign:'center'}}><a href="mailto:cukampus2025@gmail.com" style={{color:'#004aad', fontWeight:'bold', textDecoration:'none'}}>📧 Mail At</a></div>
+              <div style={{marginTop:15, textAlign:'center'}}>
+                  <a href="mailto:cukampus2025@gmail.com" style={{color:'#004aad', fontWeight:'bold', textDecoration:'none'}}>📧 Mail At</a>
+              </div>
           </div>
       </div>
   );
@@ -105,14 +110,24 @@ function AnaSayfa() {
       <div className="beta-text">Beta 0.32</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
-      {/* MOBİL HEADER */}
-      <div className="mobile-header"> <button className="hamburger-btn" onClick={()=>setMobilMenuAcik(true)}>☰</button> </div>
+      {/* MOBİL HEADER (BAŞLIK ORTADA) */}
+      <div className="mobile-header"> 
+          <button className="hamburger-btn" onClick={()=>setMobilMenuAcik(true)}>☰</button> 
+          <div className="mobile-logo-container">
+            <h1 className="mobile-logo">Çukurova Kampüs</h1> 
+          </div>
+          <div style={{width:24}}></div> {/* Dengeli dursun diye boşluk */}
+      </div>
       {mobilMenuAcik && <MobilMenu/>}
 
-      {/* MASAÜSTÜ HEADER (GİZLENDİ - İÇERİ TAŞINDI) */}
-      
+      {/* MASAÜSTÜ HEADER */}
+      <header className="desktop-header">
+        <h1 style={{ color: '#004aad', fontSize: '38px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1>
+        <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p>
+      </header>
+
       <div className="content-grid">
-        {/* SOL */}
+        {/* SOL (MASAÜSTÜ) */}
         <div className="left-col desktop-only">
           <h3 className="col-title">Menü</h3>
           {kullanici && kullanici.nickname === 'baraykanat' && ( <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div> )}
@@ -123,12 +138,6 @@ function AnaSayfa() {
         
         {/* ORTA */}
         <div className="center-col">
-          {/* BAŞLIK BURAYA TAŞINDI - ORTALANDI */}
-          <div style={{textAlign:'center', marginBottom:'30px'}}>
-            <h1 style={{ color: '#004aad', fontSize: '38px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1>
-            <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p>
-          </div>
-
           {!kullanici ? ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 15px 0' }}>Hoş Geldin</h2> <p style={{ color: '#555', marginBottom: '30px', fontSize: '15px' }}>Yorum yapmak için giriş yapmalısın.</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '220px', margin: '0 auto' }}> <button onClick={() => { setModalTip('giris'); setModalAcik(true); }} className="login-btn">Giriş Yap</button> <button onClick={() => { setModalTip('kayit'); setModalAcik(true); }} className="register-btn">Kayıt Ol</button> </div> </> ) : ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 10px 0' }}>{kullanici.nickname}</h2> <p style={{ color: '#555', marginBottom: '30px' }}>Giriş yaptın.</p> <button onClick={cikisYap} className="logout-btn">Çıkış Yap</button> </> )}
           <div className="donation-bar-container">
             <p className="donation-text">2025 31 Aralık tarihine kadar her 600 yorum için<br/> Darüşşafaka Cemiyetine 200 lira bağış!</p>
@@ -137,7 +146,7 @@ function AnaSayfa() {
           </div>
         </div>
 
-        {/* SAĞ */}
+        {/* SAĞ (MASAÜSTÜ) */}
         <div className="right-col desktop-only">
           <h3 className="col-title">İletişim</h3>
           <div className="iletisim-box">
@@ -168,7 +177,7 @@ function YurtlarSayfasi() {
   const yurtSec = (yurt) => { setSeciliYurt(yurt); fetch(`${API_URL}/yurt-yorumlari/${yurt}`).then(res => res.json()).then(data => { if(Array.isArray(data)) setYorumlar(data); else setYorumlar([]); }).catch(()=>setYorumlar([])); };
   const yorumGonder = () => { if (!yeniYorum.trim()) return; fetch(`${API_URL}/yurt-yorum-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ yurt_adi: seciliYurt, yorum_metni: yeniYorum, kullanici_adi: kullanici.nickname }) }).then(() => { setYeniYorum(""); yurtSec(seciliYurt); }); };
   const kendiYorumunuSil = (id) => { if(window.confirm("Silmek istiyor musun?")) fetch(`${API_URL}/yorum-sil`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tur:'yurt', id, kullanici_adi:kullanici.nickname})}).then(()=>{yurtSec(seciliYurt);}); };
-  return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={() => seciliYurt ? setSeciliYurt(null) : navigate('/')} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliYurt ? 'Yurtlar' : seciliYurt}</h2> </div> {!seciliYurt ? ( <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yurtListesi.map((yurt, index) => ( <div key={index} onClick={() => yurtSec(yurt)} style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', color:'#00796b', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between' }}> <span>🛏️ {yurt}</span> <span style={{color:'#ccc'}}>❯</span> </div> ))} </div> ) : ( <div> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e0f7fa', borderRadius: '10px' }}> <textarea rows="3" placeholder="Bu yurt hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#00796b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Gönder</button> </div> <h3>Yorumlar ({yorumlar.length})</h3> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{ color: '#333' }}>{y.yorum_metni}</div> <div style={{ fontSize: '0.7em', color: '#999', marginTop: '5px' }}>{new Date(y.tarih).toLocaleDateString('tr-TR')}</div> </div> )) } </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> )} </div> ); }
+  return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={() => seciliYurt ? setSeciliYurt(null) : navigate('/')} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliYurt ? 'Yurtlar' : seciliYurt}</h2> </div> {!seciliYurt ? ( <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yurtListesi.map((yurt, index) => ( <div key={index} onClick={() => yurtSec(yurt)} style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', color:'#00796b', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between' }}> <span>🛏️ {yurt}</span> <span style={{color:'#ccc'}}>❯</span> </div> ))} </div> ) : ( <div> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e0f7fa', borderRadius: '10px' }}> <textarea rows="3" placeholder="Bu yurt hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#00796b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight:'bold' }}>Gönder</button> </div> <h3>Yorumlar ({yorumlar.length})</h3> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{ color: '#333' }}>{y.yorum_metni}</div> <div style={{ fontSize: '0.7em', color: '#999', marginTop: '5px' }}>{new Date(y.tarih).toLocaleDateString('tr-TR')}</div> </div> )) } </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> )} </div> ); }
 
 function DersDetay() {
   const location = useLocation(); const navigate = useNavigate(); const ders = location.state?.ders; const [kullanici, setKullanici] = useState(null); const [yeniYorum, setYeniYorum] = useState(""); const [yorumlar, setYorumlar] = useState([]);
@@ -177,77 +186,10 @@ function DersDetay() {
   const yorumGonder = () => { if (!yeniYorum.trim()) return; if (!kullanici) { alert("Giriş yapmalısın!"); return; } fetch(`${API_URL}/ders-yorum-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ders_kodu: ders.ders_kodu, ders_adi: ders.ders_adi, kullanici_adi: kullanici.nickname, yorum_metni: yeniYorum }) }).then(() => { setYeniYorum(""); verileriGuncelle(); }); };
   const kendiYorumunuSil = (id) => { if(window.confirm("Silmek istiyor musun?")) fetch(`${API_URL}/yorum-sil`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tur:'ders', id, kullanici_adi:kullanici.nickname})}).then(()=>{verileriGuncelle();}); };
   if (!ders) return <div style={{padding:20}}>Hata: Ders bulunamadı. <button onClick={()=>navigate('/')}>Geri Dön</button></div>;
-  return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <button onClick={() => navigate(-1)} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginBottom: '20px' }}>⬅️ Geri</button> <div style={{ backgroundColor: '#004aad', color: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}> <span style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8em' }}>{ders.ders_kodu}</span> <h2 style={{ margin: '10px 0' }}>{ders.ders_adi}</h2> <p style={{ margin: 0, opacity: 0.9 }}>👨‍🏫 {ders.hoca_adi}</p> <small style={{ display:'block', marginTop:'10px', opacity: 0.7 }}>{ders.fakulte} / {ders.bolum}</small> </div> <div style={{ marginTop: '30px' }}> <h3>💬 Yorumlar ({yorumlar.length})</h3> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e8f5e9', borderRadius: '10px', border:'1px solid #c8e6c9' }}> <textarea rows="3" placeholder="Bu ders hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#2e7d32', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Yorum Yap</button> </div> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{color:'#333'}}>{y.yorum_metni}</div> <div style={{fontSize:'0.7em', color:'#ccc', marginTop:'5px'}}>{y.tarih ? new Date(y.tarih).toLocaleDateString() : ''}</div> </div> ))} </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> </div> ); }
+  return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <button onClick={() => navigate(-1)} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginBottom: '20px' }}>⬅️</button> <div style={{ backgroundColor: '#004aad', color: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}> <span style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8em' }}>{ders.ders_kodu}</span> <h2 style={{ margin: '10px 0' }}>{ders.ders_adi}</h2> <p style={{ margin: 0, opacity: 0.9 }}>👨‍🏫 {ders.hoca_adi}</p> <small style={{ display:'block', marginTop:'10px', opacity: 0.7 }}>{ders.fakulte} / {ders.bolum}</small> </div> <div style={{ marginTop: '30px' }}> <h3>💬 Yorumlar ({yorumlar.length})</h3> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e8f5e9', borderRadius: '10px', border:'1px solid #c8e6c9' }}> <textarea rows="3" placeholder="Bu ders hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#2e7d32', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Yorum Yap</button> </div> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{color:'#333'}}>{y.yorum_metni}</div> <div style={{fontSize:'0.7em', color:'#ccc', marginTop:'5px'}}>{y.tarih ? new Date(y.tarih).toLocaleDateString() : ''}</div> </div> ))} </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> </div> ); }
 
-// --- HOCALAR SAYFASI ---
-function HocalarSayfasi() { 
-    const [data, setData] = useState([]); 
-    const [arama, setArama] = useState(""); 
-    const [secili, setSecili] = useState(null); 
-    const [dersler, setDersler] = useState([]); 
-    const nav = useNavigate();
-
-    useEffect(() => { 
-        fetch(`${API_URL}/hocalar`)
-            .then(r => r.json())
-            .then(d => { if(Array.isArray(d)) setData(d); else setData([]); })
-            .catch(() => setData([])); 
-    }, []);
-
-    const hocaSec = (h) => { 
-        setSecili(h); 
-        fetch(`${API_URL}/hoca-dersleri/${h}`).then(r => r.json()).then(d => setDersler(d)); 
-    };
-
-    const don = () => { if(secili) setSecili(null); else nav('/'); };
-
-    // Hoca Arama Filtresi
-    const filtreliHocalar = arama.trim() === "" 
-        ? data 
-        : data.filter(i => i.hoca_adi && i.hoca_adi.toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr')));
-
-    return ( 
-        <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> 
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                <button onClick={don} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> 
-                <h2 style={{ margin: 0, color: '#333' }}>{!secili ? 'Hoca Bul' : secili}</h2> 
-            </div> 
-            
-            {!secili ? ( 
-                <div>
-                    <input 
-                        type="text" 
-                        placeholder="Hoca adı ara..." 
-                        value={arama} 
-                        onChange={(e) => setArama(e.target.value)} 
-                        style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #eee', marginBottom: '20px', outline: 'none', backgroundColor: '#fff' }} 
-                    /> 
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> 
-                        {filtreliHocalar.map((item, index) => ( 
-                            <div key={index} onClick={() => hocaSec(item.hoca_adi)} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#444', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', display:'flex', alignItems:'center' }}> 
-                                <span style={{marginRight:'10px', fontSize:'1.2em'}}>👨‍🏫</span> {item.hoca_adi} 
-                            </div> 
-                        ))} 
-                        {arama && filtreliHocalar.length === 0 && <p style={{color:'#888', textAlign:'center'}}>Sonuç bulunamadı.</p>}
-                    </div> 
-                </div> 
-            ) : ( 
-                <div>
-                    <p style={{color:'#666', marginBottom:'10px'}}>Verdiği Dersler:</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> 
-                        {dersler.map((d) => ( 
-                            <div key={d.id} onClick={() => nav('/ders-detay', { state: { ders: d } })} style={{ padding: '15px', backgroundColor: 'white', borderLeft: '5px solid #004aad', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor:'pointer' }}> 
-                                <div style={{ fontWeight: 'bold', color: '#333', fontSize:'1.1em' }}><span style={{color: '#004aad', marginRight:'8px'}}>{d.ders_kodu}</span> {d.ders_adi}</div> 
-                                <div style={{ fontSize: '0.85em', color: '#888', marginTop:'4px' }}>{d.fakulte} - {d.bolum}</div> 
-                            </div> 
-                        ))} 
-                    </div> 
-                </div> 
-            )} 
-        </div> 
-    ); 
-}
+function FakultelerSayfasi() { const [tumVeri, setTumVeri] = useState([]); const [seciliFakulte, setSeciliFakulte] = useState(null); const [seciliBolum, setSeciliBolum] = useState(null); const [dersler, setDersler] = useState([]); const [aramaMetni, setAramaMetni] = useState(""); const navigate = useNavigate(); useEffect(() => { fetch(`${API_URL}/bolumler`).then(res => res.json()).then(data => setTumVeri(data)); }, []); const tumFakulteler = [...new Set(tumVeri.map(item => item.fakulte))]; const fakulteSec = (fakulteAdi) => { setSeciliFakulte(fakulteAdi); setAramaMetni(""); }; const bolumSec = (bolumAdi) => { setSeciliBolum(bolumAdi); setAramaMetni(""); fetch(`${API_URL}/dersler/${bolumAdi}`).then(res => res.json()).then(data => setDersler(data)); }; const derseGit = (ders) => { navigate('/ders-detay', { state: { ders: ders } }); }; const geriDon = () => { setAramaMetni(""); if (seciliBolum) { setSeciliBolum(null); setDersler([]); } else if (seciliFakulte) { setSeciliFakulte(null); } else { navigate('/'); } }; const filtrelenmisFakulteler = tumFakulteler.filter(fak => fak.toLocaleLowerCase('tr').includes(aramaMetni.toLocaleLowerCase('tr'))); const filtrelenmisBolumler = tumVeri.filter(x => x.fakulte === seciliFakulte).filter(x => x.bolum.toLocaleLowerCase('tr').includes(aramaMetni.toLocaleLowerCase('tr'))); const filtrelenmisDersler = dersler.filter(d => d.ders_adi.toLocaleLowerCase('tr').includes(aramaMetni.toLocaleLowerCase('tr')) || d.ders_kodu.toLocaleLowerCase('tr').includes(aramaMetni.toLocaleLowerCase('tr'))); return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={geriDon} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, fontSize: '20px' }}>{!seciliFakulte ? 'Fakülte Seç' : !seciliBolum ? 'Bölüm Seç' : 'Ders Seç'}</h2> </div> <input type="text" placeholder="Fakülte ara..." value={aramaMetni} onChange={(e) => setAramaMetni(e.target.value)} style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #eee', marginBottom: '20px', outline: 'none', backgroundColor: '#f9f9f9' }} /> {!seciliFakulte && ( <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisFakulteler.map((fak, i) => ( <div key={i} onClick={() => fakulteSec(fak)} style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between' }}>{fak} <span style={{color:'#ccc'}}>❯</span></div> ))} </div> )} {seciliFakulte && !seciliBolum && ( <div> <div style={{marginBottom:'10px', color:'#888', fontSize:'0.9em'}}>{seciliFakulte}</div> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisBolumler.map((item, i) => ( <div key={i} onClick={() => bolumSec(item.bolum)} style={{ padding: '15px', backgroundColor: '#f0f7ff', border: '1px solid #e1effe', borderRadius: '10px', cursor: 'pointer', color: '#0056b3', fontWeight: '600' }}>{item.bolum}</div> ))} </div> </div> )} {seciliBolum && ( <div> <div style={{marginBottom:'10px', color:'#888', fontSize:'0.9em'}}>{seciliBolum}</div> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisDersler.map((d) => ( <div key={d.id} onClick={() => derseGit(d)} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.03)', cursor: 'pointer' }}> <div style={{fontSize:'0.8em', color:'#999'}}>{d.ders_kodu}</div><div style={{fontWeight:'bold', fontSize:'1.1em', color: '#333'}}>{d.ders_adi}</div><div style={{fontSize:'0.9em', color:'#555', marginTop:'5px'}}>👨‍🏫 {d.hoca_adi}</div> </div> ))} </div> </div> )} </div> ); }
+function HocalarSayfasi() { const [tumHocalar, setTumHocalar] = useState([]); const [hocaArama, setHocaArama] = useState(""); const [dersArama, setDersArama] = useState(""); const [seciliHoca, setSeciliHoca] = useState(null); const [hocaDersleri, setHocaDersleri] = useState([]); const navigate = useNavigate(); useEffect(() => { fetch(`${API_URL}/hocalar`).then(res => res.json()).then(data => { if(Array.isArray(data)) setTumHocalar(data); else setTumHocalar([]); }).catch(()=>setTumHocalar([])); }, []); const filtrelenmisHocalar = tumHocalar.filter(item => item.hoca_adi && item.hoca_adi.toLocaleLowerCase('tr').includes(hocaArama.toLocaleLowerCase('tr'))); const filtrelenmisDersler = hocaDersleri.filter(ders => ders.ders_adi.toLocaleLowerCase('tr').includes(dersArama.toLocaleLowerCase('tr')) || ders.ders_kodu.toLocaleLowerCase('tr').includes(dersArama.toLocaleLowerCase('tr'))); const hocaGetir = (hocaAdi) => { setSeciliHoca(hocaAdi); setDersArama(""); fetch(`${API_URL}/hoca-dersleri/${hocaAdi}`).then(res => res.json()).then(data => setHocaDersleri(data)); }; const derseGit = (ders) => { navigate('/ders-detay', { state: { ders: ders } }); }; const geriDon = () => { if (seciliHoca) { setSeciliHoca(null); setDersArama(""); } else { navigate('/'); } }; return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={geriDon} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliHoca ? 'Hoca Bul' : seciliHoca}</h2> </div> {!seciliHoca ? ( <div> <input type="text" placeholder="Hoca adı ara..." value={hocaArama} onChange={(e) => setHocaArama(e.target.value)} style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #eee', marginBottom: '20px', outline: 'none', backgroundColor: '#fff' }} /> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisHocalar.slice(0, 30).map((item, index) => ( <div key={index} onClick={() => hocaGetir(item.hoca_adi)} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#444', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', display:'flex', alignItems:'center' }}> <span style={{marginRight:'10px', fontSize:'1.2em'}}>👨‍🏫</span> {item.hoca_adi} </div> ))} </div> </div> ) : ( <div> <input type="text" placeholder="Ders adı veya kodu ara..." value={dersArama} onChange={(e) => setDersArama(e.target.value)} style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #e3f2fd', marginBottom: '20px', outline: 'none', backgroundColor: '#f1f8ff' }} /> <p style={{color:'#666', marginBottom:'10px'}}>Verdiği Dersler ({filtrelenmisDersler.length}):</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisDersler.map((ders) => ( <div key={ders.id} onClick={() => derseGit(ders)} style={{ padding: '15px', backgroundColor: 'white', borderLeft: '5px solid #004aad', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor:'pointer' }}> <div style={{ fontWeight: 'bold', color: '#333', fontSize:'1.1em' }}><span style={{color: '#004aad', marginRight:'8px'}}>{ders.ders_kodu}</span> {ders.ders_adi}</div> <div style={{ fontSize: '0.85em', color: '#888', marginTop:'4px' }}>{ders.fakulte} - {ders.bolum}</div> </div> ))} </div> </div> )} </div> ); }
 
 function App() {
   return (
