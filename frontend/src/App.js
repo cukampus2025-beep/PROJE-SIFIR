@@ -37,7 +37,7 @@ const AdminPanel = () => {
 const Topluluklar = () => ( <div style={{padding: '40px', textAlign: 'center', maxWidth: '800px', margin: '0 auto'}}> <Link to="/" style={{textDecoration:'none', fontSize:'20px', color: '#333'}}>⬅️ Geri</Link> <div style={{marginTop: '40px', padding: '40px', backgroundColor: '#fff3e0', borderRadius: '20px', border: '2px dashed #FFB74D'}}> <h1 style={{color: '#F57C00'}}>Öğrenci Toplulukları</h1> <p style={{fontSize: '20px', color: '#555', lineHeight: '1.6'}}> Üniversite bünyesinde bulunan topluluklar iletişime geçerse eklemeyi istiyorum. </p> </div> </div> );
 const BosSayfa = ({baslik}) => <div style={{padding:20}}><Link to="/">⬅️ Geri</Link><h2>{baslik}</h2><p>Yapım aşamasında...</p></div>;
 
-// --- ANA SAYFA (3 SÜTUNLU - ESKİ SAĞLAM TASARIM) ---
+// --- ANA SAYFA ---
 function AnaSayfa() {
   const navigate = useNavigate();
   const [iletisimAcik, setIletisimAcik] = useState(false);
@@ -47,6 +47,7 @@ function AnaSayfa() {
   const [modalTip, setModalTip] = useState('giris');
   const [kullanici, setKullanici] = useState(null);
   const [toplamYorum, setToplamYorum] = useState(0);
+  const [mobilMenuAcik, setMobilMenuAcik] = useState(false);
 
   useEffect(() => { 
       const u = localStorage.getItem('user'); 
@@ -72,14 +73,53 @@ function AnaSayfa() {
     { id: 6, title: 'Topluluklar', icon: '🤝', link: '/topluluklar' },
   ];
 
+  const MobilMenu = () => (
+      <div className="mobile-menu-overlay" onClick={()=>setMobilMenuAcik(false)}>
+          <div className="mobile-menu-content" onClick={e=>e.stopPropagation()}>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
+                <h3 style={{margin:0, color:'#004aad'}}>Menü</h3>
+                <button className="close-menu" onClick={()=>setMobilMenuAcik(false)}>✖</button>
+              </div>
+              {kullanici && kullanici.nickname === 'baraykanat' && <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div>}
+              
+              {/* MOBİLDE MENÜLER */}
+              <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+                  {menuler.map(m=><div key={m.id} onClick={()=>{navigate(m.l);setMobilMenuAcik(false)}} className="menu-item"><span>{m.icon}</span> {m.title}</div>)}
+              </div>
+              
+              <hr style={{margin:'20px 0', border:'0', borderTop:'1px solid #eee'}}/>
+              
+              {/* MOBİLDE İLETİŞİM (ALT ALTA) */}
+              <h3 style={{margin:'0 0 10px 0', color:'#444'}}>İletişim</h3>
+              <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+                {!iletisimAcik ? <button onClick={()=>setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> : <div><textarea className="msg-input" value={mesaj} onChange={e=>setMesaj(e.target.value)} placeholder="Mesajınız..."/><button onClick={mesajGonder} className="send-btn" style={{width:'100%', marginTop:5}}>Gönder</button></div>}
+                <a href="mailto:cukampus2025@gmail.com" style={{textAlign:'center', color:'#004aad', fontWeight:'bold', textDecoration:'none', display:'block', padding:10}}>📧 Mail At</a>
+              </div>
+          </div>
+      </div>
+  );
+
   return (
     <div className="main-container">
       <div className="beta-text">Beta 0.32</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
+      {/* MOBİL HEADER (SADECE 3 ÇİZGİ) */}
+      <div className="mobile-header"> 
+          <button className="hamburger-btn" onClick={()=>setMobilMenuAcik(true)}>☰</button> 
+          {/* Mobil logoyu kaldırdık, isteğin üzerine */}
+      </div>
+      {mobilMenuAcik && <MobilMenu/>}
+
+      {/* MASAÜSTÜ HEADER (ORTALI) */}
+      <header className="desktop-header" style={{textAlign:'center', marginBottom:40}}> 
+        <h1 style={{ color: '#004aad', fontSize: '38px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1> 
+        <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p> 
+      </header>
+
       <div className="content-grid">
-        {/* SOL: MENÜLER (EN SOLDA) */}
-        <div className="left-col">
+        {/* SOL (MASAÜSTÜ) */}
+        <div className="left-col desktop-only">
           <h3 className="col-title">Menü</h3>
           {kullanici && kullanici.nickname === 'baraykanat' && ( <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div> )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -87,15 +127,9 @@ function AnaSayfa() {
           </div>
         </div>
         
-        {/* ORTA: BAŞLIK + GİRİŞ + BAR */}
+        {/* ORTA */}
         <div className="center-col">
-          <div style={{textAlign:'center', marginBottom:'30px'}}>
-            <h1 style={{ color: '#004aad', fontSize: '38px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1>
-            <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p>
-          </div>
-
           {!kullanici ? ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 15px 0' }}>Hoş Geldin</h2> <p style={{ color: '#555', marginBottom: '30px', fontSize: '15px' }}>Yorum yapmak için giriş yapmalısın.</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '220px', margin: '0 auto' }}> <button onClick={() => { setModalTip('giris'); setModalAcik(true); }} className="login-btn">Giriş Yap</button> <button onClick={() => { setModalTip('kayit'); setModalAcik(true); }} className="register-btn">Kayıt Ol</button> </div> </> ) : ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 10px 0' }}>{kullanici.nickname}</h2> <p style={{ color: '#555', marginBottom: '30px' }}>Giriş yaptın.</p> <button onClick={cikisYap} className="logout-btn">Çıkış Yap</button> </> )}
-          
           <div className="donation-bar-container">
             <p className="donation-text">2025 31 Aralık tarihine kadar her 600 yorum için<br/> Darüşşafaka Cemiyetine 200 lira bağış!</p>
             <div className="progress-bg"><div className="progress-fill" style={{ width: `${barYuzdesi}%` }}></div></div>
@@ -103,12 +137,13 @@ function AnaSayfa() {
           </div>
         </div>
 
-        {/* SAĞ: İLETİŞİM (BEYAZ KUTU) */}
-        <div className="right-col">
+        {/* SAĞ (MASAÜSTÜ - BEYAZ KUTU) */}
+        <div className="right-col desktop-only">
           <h3 className="col-title">İletişim</h3>
           <div className="iletisim-box">
             <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.5', marginBottom: '15px', marginTop: 0 }}>Tavsiye ve önerileriniz için:</p>
             {!iletisimAcik ? ( <button onClick={() => setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> ) : ( <div> <textarea rows="4" value={mesaj} onChange={(e) => setMesaj(e.target.value)} className="msg-input" /> <div style={{ display: 'flex', gap: '10px' }}> <button onClick={mesajGonder} className="send-btn">Gönder</button> <button onClick={() => setIletisimAcik(false)} className="cancel-btn">İptal</button> </div> </div> )}
+            {bilgi && <div style={{color:'green', marginTop:5, fontSize:'0.9em', textAlign:'center'}}>{bilgi}</div>}
             <div style={{marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee', textAlign:'center'}}> <a href="mailto:cukampus2025@gmail.com" style={{color: '#004aad', textDecoration: 'none', fontWeight:'bold'}}>📧 Mail At</a> </div>
           </div>
         </div>
@@ -134,7 +169,7 @@ function YurtlarSayfasi() {
   const yurtSec = (yurt) => { setSeciliYurt(yurt); fetch(`${API_URL}/yurt-yorumlari/${yurt}`).then(res => res.json()).then(data => { if(Array.isArray(data)) setYorumlar(data); else setYorumlar([]); }).catch(()=>setYorumlar([])); };
   const yorumGonder = () => { if (!yeniYorum.trim()) return; fetch(`${API_URL}/yurt-yorum-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ yurt_adi: seciliYurt, yorum_metni: yeniYorum, kullanici_adi: kullanici.nickname }) }).then(() => { setYeniYorum(""); yurtSec(seciliYurt); }); };
   const kendiYorumunuSil = (id) => { if(window.confirm("Silmek istiyor musun?")) fetch(`${API_URL}/yorum-sil`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tur:'yurt', id, kullanici_adi:kullanici.nickname})}).then(()=>{yurtSec(seciliYurt);}); };
-  return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={() => seciliYurt ? setSeciliYurt(null) : navigate('/')} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliYurt ? 'Yurtlar' : seciliYurt}</h2> </div> {!seciliYurt ? ( <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yurtListesi.map((yurt, index) => ( <div key={index} onClick={() => yurtSec(yurt)} style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', color:'#00796b', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between' }}> <span>🛏️ {yurt}</span> <span style={{color:'#ccc'}}>❯</span> </div> ))} </div> ) : ( <div> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e0f7fa', borderRadius: '10px' }}> <textarea rows="3" placeholder="Bu yurt hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#00796b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight:'bold' }}>Gönder</button> </div> <h3>Yorumlar ({yorumlar.length})</h3> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{ color: '#333' }}>{y.yorum_metni}</div> <div style={{ fontSize: '0.7em', color: '#999', marginTop: '5px' }}>{new Date(y.tarih).toLocaleDateString('tr-TR')}</div> </div> )) } </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> )} </div> ); }
+  return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={() => seciliYurt ? setSeciliYurt(null) : navigate('/')} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliYurt ? 'Yurtlar' : seciliYurt}</h2> </div> {!seciliYurt ? ( <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yurtListesi.map((yurt, index) => ( <div key={index} onClick={() => yurtSec(yurt)} style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', color:'#00796b', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between' }}> <span>🛏️ {yurt}</span> <span style={{color:'#ccc'}}>❯</span> </div> ))} </div> ) : ( <div> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e0f7fa', borderRadius: '10px' }}> <textarea rows="3" placeholder="Bu yurt hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#00796b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Gönder</button> </div> <h3>Yorumlar ({yorumlar.length})</h3> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{ color: '#333' }}>{y.yorum_metni}</div> <div style={{ fontSize: '0.7em', color: '#999', marginTop: '5px' }}>{new Date(y.tarih).toLocaleDateString('tr-TR')}</div> </div> )) } </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> )} </div> ); }
 
 function DersDetay() {
   const location = useLocation(); const navigate = useNavigate(); const ders = location.state?.ders; const [kullanici, setKullanici] = useState(null); const [yeniYorum, setYeniYorum] = useState(""); const [yorumlar, setYorumlar] = useState([]);
@@ -168,7 +203,9 @@ function HocalarSayfasi() {
     const don = () => { if(secili) setSecili(null); else nav('/'); };
 
     // 2. ARAMA (BOŞSA HEPSİNİ GÖSTER)
-    const filtreliHocalar = data.filter(i => i.hoca_adi && i.hoca_adi.toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr')));
+    const filtreliHocalar = arama.trim() === "" 
+        ? data 
+        : data.filter(i => i.hoca_adi && i.hoca_adi.toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr')));
 
     return ( 
         <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> 
