@@ -73,6 +73,7 @@ function AnaSayfa() {
     { id: 6, title: 'Topluluklar', icon: '🤝', link: '/topluluklar' },
   ];
 
+  // MOBİL MENÜ (DÜZELTİLDİ: Linkler Artık Çalışıyor)
   const MobilMenu = () => (
       <div className="mobile-menu-overlay" onClick={()=>setMobilMenuAcik(false)}>
           <div className="mobile-menu-content" onClick={e=>e.stopPropagation()}>
@@ -80,13 +81,16 @@ function AnaSayfa() {
                 <h3 style={{margin:0, color:'#004aad'}}>Menü</h3>
                 <button className="close-menu" onClick={()=>setMobilMenuAcik(false)}>✖</button>
               </div>
+              
               {kullanici && kullanici.nickname === 'baraykanat' && <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div>}
               
+              {/* BURADA menü.link KULLANDIM */}
               <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-                  {menuler.map(m=><div key={m.id} onClick={()=>{navigate(m.l);setMobilMenuAcik(false)}} className="menu-item"><span>{m.i}</span>{m.t}</div>)}
+                  {menuler.map(menu=><div key={menu.id} onClick={()=>{navigate(menu.link);setMobilMenuAcik(false)}} className="menu-item"><span>{menu.icon}</span>{menu.title}</div>)}
               </div>
               
               <hr style={{margin:'20px 0', border:'0', borderTop:'1px solid #eee'}}/>
+              
               <h3 style={{margin:'0 0 10px 0', color:'#444'}}>İletişim</h3>
               {!iletisimAcik ? <button onClick={()=>setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> : <div><textarea className="msg-input" value={mesaj} onChange={e=>setMesaj(e.target.value)}/><button onClick={mesajGonder} className="send-btn" style={{width:'100%'}}>Gönder</button></div>}
               <div style={{marginTop:15, textAlign:'center'}}><a href="mailto:cukampus2025@gmail.com" style={{color:'#004aad', fontWeight:'bold', textDecoration:'none'}}>📧 Mail At</a></div>
@@ -98,13 +102,45 @@ function AnaSayfa() {
     <div className="main-container">
       <div className="beta-text">Beta 0.32</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
-      <div className="mobile-header"> <button className="hamburger-btn" onClick={()=>setMobilMenuAcik(true)}>☰</button> <h1 className="mobile-logo">Çukurova Kampüs</h1> </div>
+      
+      <div className="mobile-header"> 
+          <button className="hamburger-btn" onClick={()=>setMobilMenuAcik(true)}>☰</button> 
+          <h1 className="mobile-logo">Çukurova Kampüs</h1> 
+      </div>
       {mobilMenuAcik && <MobilMenu/>}
-      <header className="desktop-header"> <h1 style={{ color: '#004aad', fontSize: '38px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1> <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p> </header>
+
+      <header className="desktop-header">
+        <h1 style={{ color: '#004aad', fontSize: '38px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1>
+        <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p>
+      </header>
+
       <div className="content-grid">
-        <div className="left-col desktop-only"> <h3 className="col-title">Menü</h3> {kullanici && kullanici.nickname === 'baraykanat' && ( <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div> )} <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {menuler.map((menu) => ( <div key={menu.id} onClick={() => navigate(menu.link)} className="menu-item"> <span style={{ marginRight: '12px', fontSize: '18px' }}>{menu.icon}</span>{menu.title} </div> ))} </div> </div>
-        <div className="center-col"> {!kullanici ? ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 15px 0' }}>Hoş Geldin</h2> <p style={{ color: '#555', marginBottom: '30px', fontSize: '15px' }}>Yorum yapmak için giriş yapmalısın.</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '220px', margin: '0 auto' }}> <button onClick={() => { setModalTip('giris'); setModalAcik(true); }} className="login-btn">Giriş Yap</button> <button onClick={() => { setModalTip('kayit'); setModalAcik(true); }} className="register-btn">Kayıt Ol</button> </div> </> ) : ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 10px 0' }}>{kullanici.nickname}</h2> <p style={{ color: '#555', marginBottom: '30px' }}>Giriş yaptın.</p> <button onClick={cikisYap} className="logout-btn">Çıkış Yap</button> </> )} <div className="donation-bar-container"> <p className="donation-text">2025 31 Aralık tarihine kadar her 600 yorum için<br/> Darüşşafaka Cemiyetine 200 lira bağış!</p> <div className="progress-bg"><div className="progress-fill" style={{ width: `${barYuzdesi}%` }}></div></div> <small style={{ color: '#777' }}>{toplamYorum} / 600 Yorum</small> </div> </div>
-        <div className="right-col desktop-only"> <h3 className="col-title">İletişim</h3> <div className="iletisim-box"> <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.5', marginBottom: '15px', marginTop: 0 }}>Tavsiye ve önerileriniz için:</p> {!iletisimAcik ? ( <button onClick={() => setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> ) : ( <div> <textarea rows="4" value={mesaj} onChange={(e) => setMesaj(e.target.value)} className="msg-input" /> <div style={{ display: 'flex', gap: '10px' }}> <button onClick={mesajGonder} className="send-btn">Gönder</button> <button onClick={() => setIletisimAcik(false)} className="cancel-btn">İptal</button> </div> </div> )} <div style={{marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee', textAlign:'center'}}> <a href="mailto:cukampus2025@gmail.com" style={{color: '#004aad', textDecoration: 'none', fontWeight:'bold'}}>📧 Mail At</a> </div> </div> </div>
+        <div className="left-col desktop-only">
+          <h3 className="col-title">Menü</h3>
+          {kullanici && kullanici.nickname === 'baraykanat' && ( <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div> )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* BURADA DA DÜZELTTİM */}
+            {menuler.map((menu) => ( <div key={menu.id} onClick={() => navigate(menu.link)} className="menu-item"> <span style={{ marginRight: '12px', fontSize: '18px' }}>{menu.icon}</span>{menu.title} </div> ))}
+          </div>
+        </div>
+        
+        <div className="center-col">
+          {!kullanici ? ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 15px 0' }}>Hoş Geldin</h2> <p style={{ color: '#555', marginBottom: '30px', fontSize: '15px' }}>Yorum yapmak için giriş yapmalısın.</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '220px', margin: '0 auto' }}> <button onClick={() => { setModalTip('giris'); setModalAcik(true); }} className="login-btn">Giriş Yap</button> <button onClick={() => { setModalTip('kayit'); setModalAcik(true); }} className="register-btn">Kayıt Ol</button> </div> </> ) : ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 10px 0' }}>{kullanici.nickname}</h2> <p style={{ color: '#555', marginBottom: '30px' }}>Giriş yaptın.</p> <button onClick={cikisYap} className="logout-btn">Çıkış Yap</button> </> )}
+          <div className="donation-bar-container">
+            <p className="donation-text">2025 31 Aralık tarihine kadar her 600 yorum için<br/> Darüşşafaka Cemiyetine 200 lira bağış!</p>
+            <div className="progress-bg"><div className="progress-fill" style={{ width: `${barYuzdesi}%` }}></div></div>
+            <small style={{ color: '#777' }}>{toplamYorum} / 600 Yorum</small>
+          </div>
+        </div>
+
+        <div className="right-col desktop-only">
+          <h3 className="col-title">İletişim</h3>
+          <div className="iletisim-box">
+            <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.5', marginBottom: '15px', marginTop: 0 }}>Tavsiye ve önerileriniz için:</p>
+            {!iletisimAcik ? ( <button onClick={() => setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> ) : ( <div> <textarea rows="4" value={mesaj} onChange={(e) => setMesaj(e.target.value)} className="msg-input" /> <div style={{ display: 'flex', gap: '10px' }}> <button onClick={mesajGonder} className="send-btn">Gönder</button> <button onClick={() => setIletisimAcik(false)} className="cancel-btn">İptal</button> </div> </div> )}
+            <div style={{marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee', textAlign:'center'}}> <a href="mailto:cukampus2025@gmail.com" style={{color: '#004aad', textDecoration: 'none', fontWeight:'bold'}}>📧 Mail At</a> </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -127,7 +163,7 @@ function YurtlarSayfasi() {
   const yurtSec = (yurt) => { setSeciliYurt(yurt); fetch(`${API_URL}/yurt-yorumlari/${yurt}`).then(res => res.json()).then(data => { if(Array.isArray(data)) setYorumlar(data); else setYorumlar([]); }).catch(()=>setYorumlar([])); };
   const yorumGonder = () => { if (!yeniYorum.trim()) return; fetch(`${API_URL}/yurt-yorum-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ yurt_adi: seciliYurt, yorum_metni: yeniYorum, kullanici_adi: kullanici.nickname }) }).then(() => { setYeniYorum(""); yurtSec(seciliYurt); }); };
   const kendiYorumunuSil = (id) => { if(window.confirm("Silmek istiyor musun?")) fetch(`${API_URL}/yorum-sil`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tur:'yurt', id, kullanici_adi:kullanici.nickname})}).then(()=>{yurtSec(seciliYurt);}); };
-  return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={() => seciliYurt ? setSeciliYurt(null) : navigate('/')} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliYurt ? 'Yurtlar' : seciliYurt}</h2> </div> {!seciliYurt ? ( <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yurtListesi.map((yurt, index) => ( <div key={index} onClick={() => yurtSec(yurt)} style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', color:'#00796b', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between' }}> <span>🛏️ {yurt}</span> <span style={{color:'#ccc'}}>❯</span> </div> ))} </div> ) : ( <div> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e0f7fa', borderRadius: '10px' }}> <textarea rows="3" placeholder="Bu yurt hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#00796b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight:'bold' }}>Gönder</button> </div> <h3>Yorumlar ({yorumlar.length})</h3> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{ color: '#333' }}>{y.yorum_metni}</div> <div style={{ fontSize: '0.7em', color: '#999', marginTop: '5px' }}>{new Date(y.tarih).toLocaleDateString('tr-TR')}</div> </div> )) } </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> )} </div> ); }
+  return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={() => seciliYurt ? setSeciliYurt(null) : navigate('/')} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliYurt ? 'Yurtlar' : seciliYurt}</h2> </div> {!seciliYurt ? ( <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yurtListesi.map((yurt, index) => ( <div key={index} onClick={() => yurtSec(yurt)} style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', color:'#00796b', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between' }}> <span>🛏️ {yurt}</span> <span style={{color:'#ccc'}}>❯</span> </div> ))} </div> ) : ( <div> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e0f7fa', borderRadius: '10px' }}> <textarea rows="3" placeholder="Bu yurt hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#00796b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Gönder</button> </div> <h3>Yorumlar ({yorumlar.length})</h3> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{ color: '#333' }}>{y.yorum_metni}</div> <div style={{ fontSize: '0.7em', color: '#999', marginTop: '5px' }}>{new Date(y.tarih).toLocaleDateString('tr-TR')}</div> </div> )) } </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> )} </div> ); }
 
 function DersDetay() {
   const location = useLocation(); const navigate = useNavigate(); const ders = location.state?.ders; const [kullanici, setKullanici] = useState(null); const [yeniYorum, setYeniYorum] = useState(""); const [yorumlar, setYorumlar] = useState([]);
