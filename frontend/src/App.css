@@ -1,52 +1,147 @@
-/* GENEL */
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+/* =========================================
+   1. GENEL AYARLAR (HER YER İÇİN)
+   ========================================= */
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    margin: 0; 
+    padding: 0; 
+    background-color: #f5f5f5; 
+}
 
-/* MODAL */
+/* --- GİRİŞ MODALI (POP-UP) --- */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999; }
 .modal-box { background: white; padding: 30px; border-radius: 15px; width: 320px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
 .modal-close { position: absolute; top: 10px; right: 15px; border: none; background: none; font-size: 24px; cursor: pointer; color: #999; }
-.modal-input { padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; width: 100%; box-sizing: border-box; }
-.modal-btn { padding: 12px; background: #004aad; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+.modal-input { padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+.modal-btn { padding: 12px; background: #004aad; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; width: 100%; margin-top: 5px; }
 .modal-error { background: #ffebee; color: #d32f2f; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; }
 .modal-info { background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; text-align:center; }
 
-/* MASAÜSTÜ */
-.desktop-header { text-align: center; margin-bottom: 40px; }
-.main-container { padding: 30px; max-width: 1100px; margin: 0 auto; min-height: 85vh; display: flex; flexDirection: column; justifyContent: center; }
-.content-grid { display: flex; gap: 30px; align-items: flex-start; justify-content: space-between; }
-.col-title { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; font-size: 18px; }
-.menu-item { background: white; padding: 15px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; font-size: 15px; font-weight: 600; color: #444; border: 1px solid #eee; transition: 0.2s; }
-.menu-item:hover { background: #f8f9fa; }
-.admin-btn { background: #FFD700 !important; border: 1px solid #FBC02D !important; color: #333 !important; justify-content: center; }
-.center-col { flex: 1.5; min-width: 280px; background: white; padding: 40px 30px; border-radius: 12px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.06); border: 1px solid #e0e0e0; align-self: flex-start; }
-.left-col, .right-col { flex: 1; min-width: 220px; }
+/* --- BUTONLAR --- */
 .login-btn { padding: 14px; font-size: 16px; background: #004aad; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; transition: 0.2s; }
 .register-btn { padding: 12px; font-size: 16px; background: white; color: #004aad; border: 2px solid #004aad; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; }
 .logout-btn { padding: 12px 30px; background: #ff4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+.msg-btn { width: 100%; padding: 10px; background: #f0f0f0; color: #333; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
+.msg-input { width: 90%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 10px; font-size: 14px; resize: none; font-family: inherit; }
+.send-btn { flex: 1; padding: 8px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; }
+.cancel-btn { flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; }
+
+/* --- MENÜ ELEMANLARI (HEM MOBİL HEM WEB) --- */
+.menu-item { 
+    background: white; 
+    padding: 15px; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+    display: flex; 
+    align-items: center; /* İkon ve yazıyı ortala */
+    border: 1px solid #eee; 
+    transition: 0.2s; 
+    font-weight: 600; 
+    color: #333; /* Yazı rengi koyu */
+    margin-bottom: 10px;
+}
+.menu-item span {
+    margin-right: 12px;
+    font-size: 20px; /* İkon boyutu */
+    min-width: 25px; /* İkon alanı */
+}
+.menu-item:hover { background: #f8f9fa; }
+.admin-btn { background: #FFD700 !important; border: 1px solid #FBC02D !important; color: #333 !important; justify-content: center; }
+
+/* --- ORTA KISIM (BAĞIŞ BARI VS) --- */
 .donation-bar-container { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
 .donation-text { font-size: 13px; color: #004aad; font-weight: bold; margin-bottom: 10px; line-height: 1.4; }
 .progress-bg { width: 100%; height: 15px; background: #eee; border-radius: 10px; overflow: hidden; margin-bottom: 5px; }
 .progress-fill { height: 100%; background: #2ecc71; transition: width 0.5s; }
 .iletisim-box { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.msg-btn { width: 100%; padding: 10px; background: #f0f0f0; color: #333; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
-.msg-input { width: 90%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 10px; font-size: 14px; resize: none; font-family: inherit; }
-.send-btn { flex: 1; padding: 8px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; }
-.cancel-btn { flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; }
 .beta-text { position: fixed; bottom: 10px; left: 15px; color: #ccc; font-size: 12px; font-family: monospace; }
 
-/* MOBİL MENÜ */
-.mobile-header { display: none; align-items: center; padding: 15px; background: white; border-bottom: 1px solid #eee; position: relative; }
-.hamburger-btn { font-size: 24px; background: none; border: none; cursor: pointer; color: #333; }
-.mobile-logo { font-size: 20px; color: #004aad; margin: 0; font-weight: bold; margin-left: 15px; }
-.mobile-menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; }
-.mobile-menu-content { position: absolute; top: 0; left: 0; width: 280px; height: 100%; background: white; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flexDirection: column; gap: 15px; overflow-y: auto; }
-.close-menu { background: none; border: none; font-size: 24px; cursor: pointer; color: #333; align-self: flex-end; }
+/* =========================================
+   2. MASAÜSTÜ AYARLARI (Web Tasarımı)
+   ========================================= */
+.desktop-header { text-align: center; margin-bottom: 40px; }
+.main-container { padding: 30px; max-width: 1100px; margin: 0 auto; min-height: 85vh; display: flex; flexDirection: column; justifyContent: center; }
+.content-grid { display: flex; gap: 30px; align-items: flex-start; justify-content: space-between; }
+.col-title { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; font-size: 18px; }
+.center-col { flex: 1.5; min-width: 280px; background: white; padding: 40px 30px; border-radius: 12px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.06); border: 1px solid #e0e0e0; align-self: flex-start; }
+.left-col, .right-col { flex: 1; min-width: 220px; }
 
+/* Mobil Elementleri Masaüstünde Gizle */
+.mobile-header, .mobile-menu-overlay { display: none; }
+
+/* =========================================
+   3. MOBİL AYARLARI (Telefon Ekranı)
+   ========================================= */
 @media (max-width: 768px) {
-    .desktop-header, .desktop-only { display: none !important; }
-    .mobile-header { display: flex; }
-    .content-grid { flex-direction: column; gap: 20px; }
-    .center-col { width: 100%; border: none; box-shadow: none; padding: 20px 0; }
-    .main-container { padding: 0; }
-    .donation-bar-container { margin-top: 20px; padding: 0 15px; }
+    /* Masaüstü parçalarını gizle */
+    .desktop-header, .desktop-only, .left-col, .right-col { display: none !important; }
+    
+    /* Mobil Header'ı Göster (LOGO ORTADA) */
+    .mobile-header { 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; /* Logoyu ortalar */
+        padding: 15px; 
+        background: white; 
+        border-bottom: 1px solid #eee; 
+        position: relative; /* Hamburger için referans */
+        width: 100%;
+    }
+    
+    /* Hamburger Butonu (SOL ÜST) */
+    .hamburger-btn { 
+        font-size: 28px; 
+        background: none; 
+        border: none; 
+        cursor: pointer; 
+        position: absolute; /* Sabit konum */
+        left: 15px; 
+        top: 50%;
+        transform: translateY(-50%);
+        color: #333;
+    }
+    
+    /* Logo (TAM ORTA) */
+    .mobile-logo { 
+        font-size: 20px; 
+        color: #004aad; 
+        margin: 0; 
+        font-weight: 800; 
+    }
+
+    /* İçerik Düzeni */
+    .main-container { padding: 0; display: block; }
+    .content-grid { display: block; padding: 15px; }
+    .center-col { 
+        width: 100%; 
+        box-sizing: border-box; 
+        padding: 20px; 
+        margin-top: 10px;
+    }
+
+    /* --- MOBİL AÇILIR MENÜ (YAN TARAFTAN GELEN) --- */
+    .mobile-menu-overlay { 
+        display: block;
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.5); z-index: 2000; 
+    }
+    .mobile-menu-content { 
+        position: absolute; top: 0; left: 0; 
+        width: 80%; /* Ekranın %80'ini kapla */
+        max-width: 300px;
+        height: 100%; 
+        background: white; 
+        padding: 20px; 
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2); 
+        display: flex; 
+        flex-direction: column; /* ALT ALTA DİZ */
+        overflow-y: auto;
+    }
+    
+    .close-menu { 
+        background: none; border: none; font-size: 24px; cursor: pointer; color: #333; 
+        align-self: flex-end; /* Sağa yasla */
+        margin-bottom: 20px;
+    }
 }
