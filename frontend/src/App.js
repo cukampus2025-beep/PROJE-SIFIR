@@ -4,36 +4,29 @@ import './App.css';
 
 const API_URL = "https://proje-sifir.onrender.com";
 
-// --- CSS ZORLAYICI (BU KISIM TASARIMI GARANTİLER) ---
+// --- CSS ZORLAYICI (TASARIM GARANTİSİ) ---
 const GlobalStyles = () => (
   <style>{`
-    /* MOBİL İÇİN ÖZEL KURALLAR */
     @media (max-width: 768px) {
-        /* Masaüstü header'ı KESİNLİKLE gizle */
         .desktop-header { display: none !important; }
-        
-        /* Yan sütunları gizle */
         .desktop-only { display: none !important; }
-        
-        /* Ana konteyner boşluğunu ayarla */
         .main-container { padding: 10px !important; margin-top: 50px !important; }
-        
-        /* Orta sütunu tam genişlik yap */
         .center-col { width: 100% !important; margin: 0 !important; box-shadow: none !important; border: none !important; padding: 10px !important; }
-        
-        /* Hamburger butonu görünür yap */
         .hamburger-fixed { display: flex !important; }
-        
-        /* Mobil başlığı görünür yap */
         .mobile-title-show { display: block !important; }
     }
-
-    /* MASAÜSTÜ İÇİN KURALLAR */
     @media (min-width: 769px) {
         .hamburger-fixed { display: none !important; }
         .mobile-title-show { display: none !important; }
         .mobile-header { display: none !important; }
     }
+    /* Admin Paneli İçin Ekstra Stil */
+    .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .admin-grid { grid-template-columns: 1fr; } }
+    .admin-box { background: #fff; padding: 15px; border: 1px solid #ddd; borderRadius: 8px; max-height: 400px; overflow-y: auto; }
+    .admin-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .btn-sil { background: #d32f2f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-ban { background: #333; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px; }
   `}</style>
 );
 
@@ -115,14 +108,112 @@ function GirisModal({ kapali, kapat, tip }) {
   );
 }
 
-// --- ADMIN PANELİ ---
+// --- ADMIN PANELİ (FULL) ---
 const AdminPanel = () => {
     const [veriler, setVeriler] = useState({ ders: [], yurt: [], forum: [], mesajlar: [] });
-    const veriCek = () => { fetch(`${API_URL}/admin/tum-veriler`).then(res => res.json()).then(data => setVeriler(data)).catch(() => setVeriler({ ders: [], yurt: [], forum: [], mesajlar: [] })); };
+    
+    const veriCek = () => { 
+        fetch(`${API_URL}/admin/tum-veriler`)
+        .then(res => res.json())
+        .then(data => setVeriler(data))
+        .catch(() => setVeriler({ ders: [], yurt: [], forum: [], mesajlar: [] })); 
+    };
+    
     useEffect(() => { veriCek(); }, []);
-    const sil = (tur, id) => { if(!window.confirm("Sil?")) return; fetch(`${API_URL}/yorum-sil`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tur, id, kullanici_adi: 'baraykanat' }) }).then(() => { veriCek(); }); };
-    const banla = (nickname) => { if(!nickname || nickname === 'Anonim') return; if(window.confirm(`DİKKAT: ${nickname} banlansın mı?`)) { fetch(`${API_URL}/admin/banla`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname }) }).then(() => alert("Banlandı!")); } };
-    return ( <div style={{padding:40, maxWidth:1000, margin:'0 auto'}}> <h1 style={{color:'#d32f2f', textAlign:'center'}}>👑 Admin Paneli</h1> <div style={{textAlign:'center', marginBottom:30}}><Link to="/" style={{padding:'10px 20px', background:'#eee', borderRadius:5, textDecoration:'none', color:'#333', fontWeight:'bold'}}>Ana Sayfaya Dön</Link></div> <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20}}> <div style={{background:'#fff', padding:15, border:'1px solid #ddd', borderRadius:8}}><h3>📨 Mesajlar</h3>{veriler.mesajlar.map(x=><div key={x.id} style={{borderBottom:'1px solid #eee', padding:'5px 0', display:'flex', justifyContent:'space-between'}}><small>{x.mesaj}</small> <button onClick={()=>sil('mesaj',x.id)}>🗑️</button></div>)}</div> </div> </div> );
+    
+    const sil = (tur, id) => { 
+        if(!window.confirm("Bu içeriği silmek istediğine emin misin?")) return;
+        if (tur === 'mesaj') {
+             fetch(`${API_URL}/admin/sil-mesaj/${id}`, { method: 'DELETE' }).then(() => veriCek());
+        } else {
+             fetch(`${API_URL}/yorum-sil`, { 
+                 method: 'POST', 
+                 headers: { 'Content-Type': 'application/json' }, 
+                 body: JSON.stringify({ tur, id, kullanici_adi: 'baraykanat' }) 
+             }).then(() => veriCek());
+        }
+    };
+    
+    const banla = (nickname) => { 
+        if(!nickname || nickname === 'Anonim') return; 
+        if(window.confirm(`DİKKAT: ${nickname} süresiz banlansın mı?`)) { 
+            fetch(`${API_URL}/admin/banla`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ nickname }) 
+            }).then(() => alert(`${nickname} banlandı!`)); 
+        } 
+    };
+
+    return ( 
+        <div style={{padding: '30px', maxWidth: '1200px', margin: '0 auto'}}> 
+            <h1 style={{color:'#d32f2f', textAlign:'center', marginBottom:10}}>👑 Admin Kontrol Merkezi</h1> 
+            <div style={{textAlign:'center', marginBottom:30}}>
+                <Link to="/" style={{padding:'10px 20px', background:'#eee', borderRadius:5, textDecoration:'none', color:'#333', fontWeight:'bold'}}>⬅️ Ana Sayfaya Dön</Link>
+            </div> 
+            
+            <div className="admin-grid"> 
+                {/* 1. KUTU: İLETİŞİM MESAJLARI */}
+                <div className="admin-box">
+                    <h3 style={{marginTop:0, borderBottom:'2px solid #ddd', paddingBottom:10}}>📨 Gelen Mesajlar ({veriler.mesajlar.length})</h3>
+                    {veriler.mesajlar.map(x=>(
+                        <div key={x.id} className="admin-item">
+                            <div style={{fontSize:'0.9em'}}>{x.mesaj}</div> 
+                            <button onClick={()=>sil('mesaj',x.id)} className="btn-sil">Sil</button>
+                        </div>
+                    ))}
+                </div> 
+
+                {/* 2. KUTU: DERS YORUMLARI */}
+                <div className="admin-box">
+                    <h3 style={{marginTop:0, borderBottom:'2px solid #ddd', paddingBottom:10}}>💬 Ders Yorumları ({veriler.ders.length})</h3>
+                    {veriler.ders.map(x => (
+                        <div key={x.id} className="admin-item">
+                            <div style={{fontSize:'0.9em'}}>
+                                <b>{x.kullanici_adi}</b> <span style={{color:'#666'}}>({x.ders_kodu})</span>:<br/> {x.yorum_metni}
+                            </div>
+                            <div style={{display:'flex'}}>
+                                <button onClick={()=>banla(x.kullanici_adi)} className="btn-ban">BAN</button>
+                                <button onClick={()=>sil('ders',x.id)} className="btn-sil">SİL</button>
+                            </div>
+                        </div>
+                    ))}
+                </div> 
+                
+                {/* 3. KUTU: YURT YORUMLARI */}
+                <div className="admin-box">
+                    <h3 style={{marginTop:0, borderBottom:'2px solid #ddd', paddingBottom:10}}>🛏️ Yurt Yorumları ({veriler.yurt.length})</h3>
+                    {veriler.yurt.map(x => (
+                        <div key={x.id} className="admin-item">
+                            <div style={{fontSize:'0.9em'}}>
+                                <b>{x.kullanici_adi}</b> <span style={{color:'#666'}}>({x.yurt_adi})</span>:<br/> {x.yorum_metni}
+                            </div>
+                            <div style={{display:'flex'}}>
+                                <button onClick={()=>banla(x.kullanici_adi)} className="btn-ban">BAN</button>
+                                <button onClick={()=>sil('yurt',x.id)} className="btn-sil">SİL</button>
+                            </div>
+                        </div>
+                    ))}
+                </div> 
+                
+                {/* 4. KUTU: FORUM (SORU CEVAP) */}
+                <div className="admin-box">
+                    <h3 style={{marginTop:0, borderBottom:'2px solid #ddd', paddingBottom:10}}>🗣️ Forum / Sorular ({veriler.forum.length})</h3>
+                    {veriler.forum.map(x => (
+                        <div key={x.id} className="admin-item">
+                            <div style={{fontSize:'0.9em'}}>
+                                <b>{x.kullanici_adi}</b>:<br/> {x.mesaj}
+                            </div>
+                            <div style={{display:'flex'}}>
+                                <button onClick={()=>banla(x.kullanici_adi)} className="btn-ban">BAN</button>
+                                <button onClick={()=>sil('forum',x.id)} className="btn-sil">SİL</button>
+                            </div>
+                        </div>
+                    ))}
+                </div> 
+            </div> 
+        </div> 
+    );
 };
 
 // --- YARDIMCI SAYFALAR ---
@@ -194,7 +285,7 @@ function AnaSayfa() {
 
   return (
     <div className="main-container">
-      <GlobalStyles /> {/* CSS BURADA YÜKLENİYOR */}
+      <GlobalStyles /> 
       <div className="beta-text">Beta 0.33</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
@@ -253,10 +344,6 @@ function AnaSayfa() {
   );
 }
 
-// --- FORUM VE DİĞER SAYFALAR (KISALTILDI - ORİJİNAL HALİ KORUNMALI) ---
-// Not: Kodun çok uzun olmaması için aşağıdaki fonksiyonların içini yukarıdaki ile aynı varsayıyorum. 
-// Sadece üstteki App fonksiyonu kritikti. Ancak senin için tam çalışan kodu buraya ekliyorum ki eksik kalmasın.
-
 function ForumSayfasi({ tur, baslik, anonimMi }) {
   const navigate = useNavigate();
   const [gonderiler, setGonderiler] = useState([]); const [yeniMesaj, setYeniMesaj] = useState(""); const [cevapKutusuAcik, setCevapKutusuAcik] = useState(null); const [cevapMesaj, setCevapMesaj] = useState("");
@@ -308,6 +395,7 @@ function HocalarSayfasi() { const [tumHocalar, setTumHocalar] = useState([]); co
   return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={geriDon} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliHoca ? 'Hoca Bul' : seciliHoca}</h2> </div> {!seciliHoca ? ( <div> <input type="text" placeholder="Hoca adı ara..." value={hocaArama} onChange={(e) => setHocaArama(e.target.value)} style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #eee', marginBottom: '20px', outline: 'none', backgroundColor: '#fff' }} /> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisHocalar.slice(0, 30).map((item, index) => ( <div key={index} onClick={() => hocaGetir(item.hoca_adi)} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#444', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', display:'flex', alignItems:'center' }}> <span style={{marginRight:'10px', fontSize:'1.2em'}}>👨‍🏫</span> {item.hoca_adi} </div> ))} </div> </div> ) : ( <div> <input type="text" placeholder="Ders adı veya kodu ara..." value={dersArama} onChange={(e) => setDersArama(e.target.value)} style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #e3f2fd', marginBottom: '20px', outline: 'none', backgroundColor: '#f1f8ff' }} /> <p style={{color:'#666', marginBottom:'10px'}}>Verdiği Dersler ({filtrelenmisDersler.length}):</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisDersler.map((ders) => ( <div key={ders.id} onClick={() => derseGit(ders)} style={{ padding: '15px', backgroundColor: 'white', borderLeft: '5px solid #004aad', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor:'pointer' }}> <div style={{ fontWeight: 'bold', color: '#333', fontSize:'1.1em' }}><span style={{color: '#004aad', marginRight:'8px'}}>{ders.ders_kodu}</span> {ders.ders_adi}</div> <div style={{ fontSize: '0.85em', color: '#888', marginTop:'4px' }}>{ders.fakulte} - {ders.bolum}</div> </div> ))} </div> </div> )} </div> );
 }
 
+// --- İŞTE BU KISIM EKSİKTİ, ARTIK EKLENDİ ---
 function App() {
   return (
     <Router>

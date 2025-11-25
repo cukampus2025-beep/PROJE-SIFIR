@@ -82,7 +82,12 @@ app.get('/bolumler', async (req, res) => { const r = await client.query('SELECT 
 app.get('/hocalar', async (req, res) => { const r = await client.query("SELECT DISTINCT hoca_adi FROM dersler WHERE hoca_adi != 'Belirtilmemiş' ORDER BY hoca_adi"); res.json(r.rows); });
 app.get('/dersler/:bolum', async (req, res) => { const r = await client.query('SELECT * FROM dersler WHERE bolum = $1', [req.params.bolum]); res.json(r.rows); });
 app.get('/hoca-dersleri/:hoca', async (req, res) => { const r = await client.query('SELECT * FROM dersler WHERE hoca_adi = $1', [req.params.hoca]); res.json(r.rows); });
-app.get('/toplam-yorum-sayisi', async (req, res) => { const q = `SELECT (SELECT COUNT(*) FROM ders_yorumlari) + (SELECT COUNT(*) FROM yurt_yorumlari) + (SELECT COUNT(*) FROM forum) + (SELECT COUNT(*) FROM iletisim_mesajlari) as toplam`; const r = await client.query(q); res.json({ toplam: parseInt(r.rows[0].toplam) }); });
+app.get('/toplam-yorum-sayisi', async (req, res) => { 
+    // Sadece ders, yurt ve forum yorumlarını sayar. İletişim mesajlarını DAHİL ETMEZ.
+    const q = `SELECT (SELECT COUNT(*) FROM ders_yorumlari) + (SELECT COUNT(*) FROM yurt_yorumlari) + (SELECT COUNT(*) FROM forum) as toplam`; 
+    const r = await client.query(q); 
+    res.json({ toplam: parseInt(r.rows[0].toplam) }); 
+});
 
 // --- 3. YORUMLAR VE FORUM ---
 app.get('/ders-yorumlari/:kod', async (req, res) => { const r = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 ORDER BY tarih DESC', [req.params.kod]); res.json(r.rows); });
