@@ -4,7 +4,7 @@ import './App.css';
 
 const API_URL = "https://proje-sifir.onrender.com";
 
-// --- DÜZELTİLMİŞ GİRİŞ MODALI ---
+// --- GİRİŞ MODALI ---
 function GirisModal({ kapali, kapat, tip }) { 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState(""); 
@@ -56,7 +56,6 @@ function GirisModal({ kapali, kapat, tip }) {
         setYukleniyor(false);
 
         if (data.success) { 
-            // BAŞARILIYSA BEKLEMEDEN DİREKT GEÇ
             setBilgi("Kod gönderildi!"); 
             setKayitAsama(2); 
         } else { 
@@ -102,7 +101,6 @@ function GirisModal({ kapali, kapat, tip }) {
               <button onClick={girisYap} className="modal-btn" disabled={yukleniyor}>{yukleniyor ? 'Giriş Yapılıyor...' : 'Giriş Yap'}</button> 
             </> 
           ) : ( 
-            // KAYIT OLMA EKRANI (AŞAMA 1 ve 2)
             kayitAsama === 1 ? ( 
               <> 
                 <p style={{fontSize:'13px', color:'#666', margin:0, textAlign:'center'}}>
@@ -113,7 +111,6 @@ function GirisModal({ kapali, kapat, tip }) {
                     {yukleniyor ? 'Gönderiliyor...' : 'Kod Gönder'}
                 </button> 
                 
-                {/* MANUEL GEÇİŞ LİNKİ (Sorun yaşarsa diye) */}
                 <div style={{textAlign:'center', marginTop:10}}>
                     <span onClick={() => setKayitAsama(2)} style={{fontSize:'13px', color:'#004aad', cursor:'pointer', textDecoration:'underline'}}>
                         Zaten kodum var, doğrula &gt;
@@ -194,7 +191,7 @@ function AnaSayfa() {
     { id: 6, title: 'Topluluklar', icon: '🤝', link: '/topluluklar' },
   ];
 
-  // MOBİL MENÜ DÜZENİ
+  // MOBİL MENÜ
   const MobilMenu = () => (
       <div className="mobile-menu-overlay" onClick={()=>setMobilMenuAcik(false)}>
           <div className="mobile-menu-content" onClick={e=>e.stopPropagation()} style={{display:'flex', flexDirection:'column', justifyContent:'space-between'}}>
@@ -206,17 +203,21 @@ function AnaSayfa() {
                   
                   {kullanici && kullanici.nickname === 'baraykanat' && <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div>}
                   
-                  {/* Menüleri ALT ALTA DİZMEK İÇİN: */}
                   <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
                       {menuler.map(menu=><div key={menu.id} onClick={()=>{navigate(menu.link);setMobilMenuAcik(false)}} className="menu-item"><span>{menu.icon}</span>{menu.title}</div>)}
                   </div>
               </div>
               
-              {/* İLETİŞİM KISMI EN ALTTA */}
               <div style={{marginTop: '20px', borderTop:'1px solid #eee', paddingTop:'20px'}}>
                   <h3 style={{margin:'0 0 10px 0', color:'#444'}}>İletişim</h3>
                   {!iletisimAcik ? <button onClick={()=>setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> : <div><textarea className="msg-input" value={mesaj} onChange={e=>setMesaj(e.target.value)}/><button onClick={mesajGonder} className="send-btn" style={{width:'100%'}}>Gönder</button></div>}
-                  <div style={{marginTop:15, textAlign:'center'}}><a href="mailto:cukampus2025@gmail.com" style={{color:'#004aad', fontWeight:'bold', textDecoration:'none'}}>📧 Mail At</a></div>
+                  
+                  {/* MAİL ALANI BURAYA EKLENDİ */}
+                  <div style={{marginTop:15, textAlign:'center', padding:10, background:'#f9f9f9', borderRadius:8}}>
+                      <a href="mailto:cukampus2025@gmail.com" style={{color:'#004aad', fontWeight:'bold', textDecoration:'none', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                          <span style={{fontSize:'20px', marginRight:5}}>📧</span> Mail At
+                      </a>
+                  </div>
               </div>
           </div>
       </div>
@@ -224,34 +225,49 @@ function AnaSayfa() {
 
   return (
     <div className="main-container">
-      <div className="beta-text">Beta 0.32</div>
+      {/* MOBİL İÇİN CSS DÜZELTMESİ (INLINE STYLE İLE GARANTİ) */}
+      <style>{`
+        @media (max-width: 768px) {
+            .desktop-header { display: none !important; } /* Masaüstü başlığını kesin gizle */
+            .left-col, .right-col { display: none !important; }
+            .mobile-only-title { display: block !important; }
+            .hamburger-fixed { display: flex !important; }
+            .main-container { padding-top: 40px !important; } /* Menü butonu üstüne binmesin diye boşluk */
+        }
+        @media (min-width: 769px) {
+            .mobile-only-title { display: none !important; }
+            .hamburger-fixed { display: none !important; }
+        }
+      `}</style>
+
+      <div className="beta-text">Beta 0.33</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
-      {/* MOBİL HEADER (HAMBURGER SOL ÜSTTE, LOGO YOK) */}
-      <div className="mobile-header"> 
-          <button className="hamburger-btn" onClick={()=>setMobilMenuAcik(true)}>☰</button> 
-          {/* Mobil header içinde logoyu kaldırdım çünkü aşağıya büyük başlık olarak ekledim */}
+      {/* 1. MENÜ BUTONU (3 ÇİZGİ) - SABİT SOL ÜST */}
+      <div className="hamburger-fixed" style={{
+          position: 'fixed', 
+          top: '15px', 
+          left: '15px', 
+          zIndex: 1000, 
+          background: 'rgba(255,255,255,0.9)', 
+          borderRadius: '50%', 
+          width: '40px', 
+          height: '40px', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+      }}> 
+          <button onClick={()=>setMobilMenuAcik(true)} style={{background:'none', border:'none', fontSize:'24px', cursor:'pointer', color:'#333', marginTop:'2px'}}>☰</button> 
       </div>
+      
       {mobilMenuAcik && <MobilMenu/>}
 
-      {/* DESKTOP HEADER */}
+      {/* MASAÜSTÜ HEADER */}
       <header className="desktop-header">
         <h1 style={{ color: '#004aad', fontSize: '38px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1>
         <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p>
       </header>
       
-      {/* MOBİL İÇİN ÖZEL BAŞLIK ALANI (SİTENİN ORTASINDA ÜSTTE GÖRÜNECEK) */}
-      <div style={{ display: 'none' }} className="mobile-title-block">
-         <style>{`
-            @media (max-width: 768px) {
-                .mobile-title-block { display: block !important; text-align: center; margin-bottom: 20px; }
-                .mobile-logo { display: none; } /* Üst bardaki küçük logoyu gizle */
-            }
-         `}</style>
-         <h1 style={{ color: '#004aad', fontSize: '28px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1>
-         <p style={{ color: '#666', fontSize: '14px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p>
-      </div>
-
       <div className="content-grid">
         <div className="left-col desktop-only">
           <h3 className="col-title">Menü</h3>
@@ -262,6 +278,13 @@ function AnaSayfa() {
         </div>
         
         <div className="center-col">
+          
+          {/* 2. MOBİL BAŞLIK - BURAYA TAŞINDI (HOŞGELDİN YAZISININ TAM ÜSTÜNE) */}
+          <div className="mobile-only-title" style={{textAlign:'center', marginBottom:'25px', paddingBottom:'15px', borderBottom:'1px solid #eee'}}>
+             <h1 style={{ color: '#004aad', fontSize: '28px', margin: '0 0 5px 0', fontWeight: '800' }}>Çukurova Kampüs</h1>
+             <p style={{ color: '#666', fontSize: '14px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p>
+          </div>
+
           {!kullanici ? ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 15px 0' }}>Hoş Geldin</h2> <p style={{ color: '#555', marginBottom: '30px', fontSize: '15px' }}>Yorum yapmak için giriş yapmalısın.</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '220px', margin: '0 auto' }}> <button onClick={() => { setModalTip('giris'); setModalAcik(true); }} className="login-btn">Giriş Yap</button> <button onClick={() => { setModalTip('kayit'); setModalAcik(true); }} className="register-btn">Kayıt Ol</button> </div> </> ) : ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 10px 0' }}>{kullanici.nickname}</h2> <p style={{ color: '#555', marginBottom: '30px' }}>Giriş yaptın.</p> <button onClick={cikisYap} className="logout-btn">Çıkış Yap</button> </> )}
           <div className="donation-bar-container">
             <p className="donation-text">2025 31 Aralık tarihine kadar her 600 yorum için<br/> Darüşşafaka Cemiyetine 200 lira bağış!</p>
@@ -345,25 +368,6 @@ function HocalarSayfasi() { const [tumHocalar, setTumHocalar] = useState([]); co
   const derseGit = (ders) => { navigate('/ders-detay', { state: { ders: ders } }); };
   const geriDon = () => { if (seciliHoca) { setSeciliHoca(null); setDersArama(""); } else { navigate('/'); } };
   return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={geriDon} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliHoca ? 'Hoca Bul' : seciliHoca}</h2> </div> {!seciliHoca ? ( <div> <input type="text" placeholder="Hoca adı ara..." value={hocaArama} onChange={(e) => setHocaArama(e.target.value)} style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #eee', marginBottom: '20px', outline: 'none', backgroundColor: '#fff' }} /> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisHocalar.slice(0, 30).map((item, index) => ( <div key={index} onClick={() => hocaGetir(item.hoca_adi)} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#444', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', display:'flex', alignItems:'center' }}> <span style={{marginRight:'10px', fontSize:'1.2em'}}>👨‍🏫</span> {item.hoca_adi} </div> ))} </div> </div> ) : ( <div> <input type="text" placeholder="Ders adı veya kodu ara..." value={dersArama} onChange={(e) => setDersArama(e.target.value)} style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #e3f2fd', marginBottom: '20px', outline: 'none', backgroundColor: '#f1f8ff' }} /> <p style={{color:'#666', marginBottom:'10px'}}>Verdiği Dersler ({filtrelenmisDersler.length}):</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisDersler.map((ders) => ( <div key={ders.id} onClick={() => derseGit(ders)} style={{ padding: '15px', backgroundColor: 'white', borderLeft: '5px solid #004aad', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor:'pointer' }}> <div style={{ fontWeight: 'bold', color: '#333', fontSize:'1.1em' }}><span style={{color: '#004aad', marginRight:'8px'}}>{ders.ders_kodu}</span> {ders.ders_adi}</div> <div style={{ fontSize: '0.85em', color: '#888', marginTop:'4px' }}>{ders.fakulte} - {ders.bolum}</div> </div> ))} </div> </div> )} </div> );
-}
-
-function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<AnaSayfa />} />
-        <Route path="/fakulteler" element={<FakultelerSayfasi />} />
-        <Route path="/hocalar" element={<HocalarSayfasi />} />
-        <Route path="/ders-detay" element={<DersDetay />} />
-        <Route path="/sorular" element={<ForumSayfasi tur="soru" baslik="❓ Soru - Cevap" />} />
-        <Route path="/anonimler" element={<ForumSayfasi tur="anonim" baslik="🎭 Burada Anonimsin" anonimMi={true} />} />
-        <Route path="/yurtlar" element={<YurtlarSayfasi />} />
-        <Route path="/topluluklar" element={<Topluluklar />} />
-        <Route path="/tavsiyeler" element={<BosSayfa baslik="Tavsiyeler" />} />
-        <Route path="/admin" element={<AdminPanel />} />
-      </Routes>
-    </Router>
-  );
 }
 
 export default App;
