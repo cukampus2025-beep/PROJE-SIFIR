@@ -13,23 +13,25 @@ function GirisModal({ kapali, kapat, tip }) {
   const [hata, setHata] = useState("");
   const [bilgi, setBilgi] = useState(""); 
   const [kayitAsama, setKayitAsama] = useState(1);
+  const [yukleniyor, setYukleniyor] = useState(false);
 
-  // Modal her açıldığında/kapandığında state'i temizle ama email kalsın
   useEffect(() => { 
     if(kapali) { 
         setKayitAsama(1); 
         setHata(""); 
         setBilgi(""); 
+        setYukleniyor(false);
     } 
   }, [kapali]);
 
   if (kapali) return null;
 
   const girisYap = async () => {
-    setHata(""); setBilgi("");
+    setHata(""); setBilgi(""); setYukleniyor(true);
     try { 
         const res = await fetch(`${API_URL}/giris`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email, password}) });
         const data = await res.json(); 
+        setYukleniyor(false);
         if (!data.success) {
              setHata(data.error); 
         } else { 
@@ -38,23 +40,33 @@ function GirisModal({ kapali, kapat, tip }) {
              localStorage.setItem('user', JSON.stringify(data.user));
              setTimeout(() => { window.location.reload(); kapat(); }, 1500); 
         } 
-    } catch(e) { setHata("Sunucuya bağlanılamadı."); }
+    } catch(e) { setHata("Sunucuya bağlanılamadı."); setYukleniyor(false); }
   };
 
   const kodGonder = async () => { 
-    setHata(""); setBilgi("Kod gönderiliyor...");
+    if(!email.includes('@ogr.cu.edu.tr')) {
+        setHata("Sadece @ogr.cu.edu.tr maili geçerlidir.");
+        return;
+    }
+    setHata(""); setBilgi("Kod gönderiliyor... (Biraz sürebilir)"); setYukleniyor(true);
+    
     try { 
         const res = await fetch(`${API_URL}/kod-gonder`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email}) }); 
         const data = await res.json();
-        if (!data.success) { 
-            setHata(data.error); 
-            setBilgi(""); 
-        } else { 
-            setBilgi("Kod mailine gönderildi! Lütfen kontrol et."); 
-            // BURASI ÖNEMLİ: Kod başarılıysa 2. aşamaya geçiyoruz
+        setYukleniyor(false);
+
+        if (data.success) { 
+            // BAŞARILIYSA BEKLEMEDEN DİREKT GEÇ
+            setBilgi("Kod gönderildi!"); 
             setKayitAsama(2); 
+        } else { 
+            setHata(data.error || "Hata oluştu."); 
+            setBilgi(""); 
         } 
-    } catch(e) { setHata("Hata oluştu."); } 
+    } catch(e) { 
+        setYukleniyor(false);
+        setHata("Sunucu yanıt vermedi."); 
+    } 
   };
 
   const kayitTamamla = async () => { 
@@ -87,16 +99,21 @@ function GirisModal({ kapali, kapat, tip }) {
             <> 
               <input type="email" placeholder="E-posta" value={email} onChange={e => setEmail(e.target.value)} className="modal-input" autoComplete="off" /> 
               <input type="password" placeholder="Şifre" value={password} onChange={e => setPassword(e.target.value)} className="modal-input" autoComplete="off" /> 
-              <button onClick={girisYap} className="modal-btn">Giriş Yap</button> 
+              <button onClick={girisYap} className="modal-btn" disabled={yukleniyor}>{yukleniyor ? 'Giriş Yapılıyor...' : 'Giriş Yap'}</button> 
             </> 
           ) : ( 
             // KAYIT OLMA EKRANI (AŞAMA 1 ve 2)
             kayitAsama === 1 ? ( 
               <> 
+                <p style={{fontSize:'13px', color:'#666', margin:0, textAlign:'center'}}>
+                    Sadece <b>@ogr.cu.edu.tr</b> maili ile kayıt olabilirsin.
+                </p>
                 <input type="email" placeholder="E-posta (@ogr.cu.edu.tr)" value={email} onChange={e => setEmail(e.target.value)} className="modal-input" autoComplete="off" /> 
-                <button onClick={kodGonder} className="modal-btn">Kod Gönder</button> 
+                <button onClick={kodGonder} className="modal-btn" disabled={yukleniyor} style={{opacity: yukleniyor ? 0.7 : 1}}>
+                    {yukleniyor ? 'Gönderiliyor...' : 'Kod Gönder'}
+                </button> 
                 
-                {/* EĞER OTOMATİK GEÇMEZSE DİYE MANUEL LİNK */}
+                {/* MANUEL GEÇİŞ LİNKİ (Sorun yaşarsa diye) */}
                 <div style={{textAlign:'center', marginTop:10}}>
                     <span onClick={() => setKayitAsama(2)} style={{fontSize:'13px', color:'#004aad', cursor:'pointer', textDecoration:'underline'}}>
                         Zaten kodum var, doğrula &gt;
@@ -129,10 +146,7 @@ const AdminPanel = () => {
     };
     useEffect(() => { veriCek(); }, []);
     const sil = (tur, id) => { if(!window.confirm("Sil?")) return;
-    fetch(`${API_URL}/yorum-sil`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tur, id, kullanici_adi: 'baraykanat' }) }).then(() => { veriCek(); }); }; // Admin silme endpointi düzeltildi veya backend uyumlu olmalı
-    
-    // Not: Orijinal kodda admin endpointi farklıydı, burayı senin backendine uyumlu bırakıyorum.
-    // Eğer backend'de /admin/sil/:tur/:id yoksa, yukarıdaki gibi normal silme endpointini admin yetkisiyle kullanır.
+    fetch(`${API_URL}/yorum-sil`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tur, id, kullanici_adi: 'baraykanat' }) }).then(() => { veriCek(); }); };
     
     const banla = (nickname) => { if(!nickname || nickname === 'Anonim') return;
     if(window.confirm(`DİKKAT: ${nickname} banlansın mı?`)) { fetch(`${API_URL}/admin/banla`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname }) }).then(() => alert("Banlandı!"));
@@ -180,25 +194,30 @@ function AnaSayfa() {
     { id: 6, title: 'Topluluklar', icon: '🤝', link: '/topluluklar' },
   ];
 
+  // MOBİL MENÜ DÜZENİ
   const MobilMenu = () => (
       <div className="mobile-menu-overlay" onClick={()=>setMobilMenuAcik(false)}>
-          <div className="mobile-menu-content" onClick={e=>e.stopPropagation()}>
-              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
-                <h3 style={{margin:0, color:'#004aad'}}>Menü</h3>
-                <button className="close-menu" onClick={()=>setMobilMenuAcik(false)}>✖</button>
+          <div className="mobile-menu-content" onClick={e=>e.stopPropagation()} style={{display:'flex', flexDirection:'column', justifyContent:'space-between'}}>
+              <div>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20}}>
+                    <h3 style={{margin:0, color:'#004aad'}}>Menü</h3>
+                    <button className="close-menu" onClick={()=>setMobilMenuAcik(false)}>✖</button>
+                  </div>
+                  
+                  {kullanici && kullanici.nickname === 'baraykanat' && <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div>}
+                  
+                  {/* Menüleri ALT ALTA DİZMEK İÇİN: */}
+                  <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+                      {menuler.map(menu=><div key={menu.id} onClick={()=>{navigate(menu.link);setMobilMenuAcik(false)}} className="menu-item"><span>{menu.icon}</span>{menu.title}</div>)}
+                  </div>
               </div>
               
-              {kullanici && kullanici.nickname === 'baraykanat' && <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div>}
-              
-              <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-                  {menuler.map(menu=><div key={menu.id} onClick={()=>{navigate(menu.link);setMobilMenuAcik(false)}} className="menu-item"><span>{menu.icon}</span>{menu.title}</div>)}
+              {/* İLETİŞİM KISMI EN ALTTA */}
+              <div style={{marginTop: '20px', borderTop:'1px solid #eee', paddingTop:'20px'}}>
+                  <h3 style={{margin:'0 0 10px 0', color:'#444'}}>İletişim</h3>
+                  {!iletisimAcik ? <button onClick={()=>setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> : <div><textarea className="msg-input" value={mesaj} onChange={e=>setMesaj(e.target.value)}/><button onClick={mesajGonder} className="send-btn" style={{width:'100%'}}>Gönder</button></div>}
+                  <div style={{marginTop:15, textAlign:'center'}}><a href="mailto:cukampus2025@gmail.com" style={{color:'#004aad', fontWeight:'bold', textDecoration:'none'}}>📧 Mail At</a></div>
               </div>
-              
-              <hr style={{margin:'20px 0', border:'0', borderTop:'1px solid #eee'}}/>
-              
-              <h3 style={{margin:'0 0 10px 0', color:'#444'}}>İletişim</h3>
-              {!iletisimAcik ? <button onClick={()=>setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> : <div><textarea className="msg-input" value={mesaj} onChange={e=>setMesaj(e.target.value)}/><button onClick={mesajGonder} className="send-btn" style={{width:'100%'}}>Gönder</button></div>}
-              <div style={{marginTop:15, textAlign:'center'}}><a href="mailto:cukampus2025@gmail.com" style={{color:'#004aad', fontWeight:'bold', textDecoration:'none'}}>📧 Mail At</a></div>
           </div>
       </div>
   );
@@ -208,16 +227,30 @@ function AnaSayfa() {
       <div className="beta-text">Beta 0.32</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
+      {/* MOBİL HEADER (HAMBURGER SOL ÜSTTE, LOGO YOK) */}
       <div className="mobile-header"> 
           <button className="hamburger-btn" onClick={()=>setMobilMenuAcik(true)}>☰</button> 
-          <h1 className="mobile-logo">Çukurova Kampüs</h1> 
+          {/* Mobil header içinde logoyu kaldırdım çünkü aşağıya büyük başlık olarak ekledim */}
       </div>
       {mobilMenuAcik && <MobilMenu/>}
 
+      {/* DESKTOP HEADER */}
       <header className="desktop-header">
         <h1 style={{ color: '#004aad', fontSize: '38px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1>
         <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p>
       </header>
+      
+      {/* MOBİL İÇİN ÖZEL BAŞLIK ALANI (SİTENİN ORTASINDA ÜSTTE GÖRÜNECEK) */}
+      <div style={{ display: 'none' }} className="mobile-title-block">
+         <style>{`
+            @media (max-width: 768px) {
+                .mobile-title-block { display: block !important; text-align: center; margin-bottom: 20px; }
+                .mobile-logo { display: none; } /* Üst bardaki küçük logoyu gizle */
+            }
+         `}</style>
+         <h1 style={{ color: '#004aad', fontSize: '28px', margin: '0 0 8px 0', fontWeight: '800' }}>Çukurova Kampüs</h1>
+         <p style={{ color: '#666', fontSize: '14px', margin: 0 }}>Öğrenci Yorum ve Bilgi Platformu</p>
+      </div>
 
       <div className="content-grid">
         <div className="left-col desktop-only">
@@ -333,5 +366,4 @@ function App() {
   );
 }
 
-// BU SATIR ÇOK ÖNEMLİ, HATAYI GİDEREN KISIM BURASI:
 export default App;
