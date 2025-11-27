@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation 
 import './App.css';
 
 // 🔥 LOCALHOST AYARI (Test bittikten sonra burayı eskisi gibi yaparsın)
-const API_URL = "https://proje-sifir.onrender.com"; 
-// const API_URL = "http://localhost:5000"; // local makine atarken bunu aç
+const API_URL = "https://proje-sifir.onrender.com";
+// const API_URL = "https://proje-sifir.onrender.com"; // online makine atarken bunu aç
 
 // --- CSS ZORLAYICI (TASARIM GARANTİSİ) ---
 const GlobalStyles = () => (
