@@ -70,7 +70,7 @@ function GirisModal({ kapali, kapat, tip }) {
     // if(!email.includes('@ogr.cu.edu.tr')) { setHata("Sadece @ogr.cu.edu.tr maili geçerlidir."); return; }
     
     setHata(""); 
-    setBilgi("Kod gönderiliyor... (Maksimum 12 saniye sürer)"); 
+    setBilgi("Kod gönderiliyor..."); 
     setYukleniyor(true);
 
     const controller = new AbortController();
