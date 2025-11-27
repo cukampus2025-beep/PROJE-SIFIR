@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 
-const API_URL = "https://proje-sifir.onrender.com";
+// 🔥 LOCALHOST AYARI (Test bittikten sonra burayı eskisi gibi yaparsın)
+const API_URL = "https://proje-sifir.onrender.com"; 
+// const API_URL = "http://localhost:5000"; // local makine atarken bunu aç
 
 // --- CSS ZORLAYICI (TASARIM GARANTİSİ) ---
 const GlobalStyles = () => (
@@ -62,15 +64,45 @@ function GirisModal({ kapali, kapat, tip }) {
     } catch(e) { setHata("Sunucuya bağlanılamadı."); setYukleniyor(false); }
   };
 
+  // 🔥 GÜNCELLENMİŞ: TAKILMAYAN KOD GÖNDERME 🔥
   const kodGonder = async () => { 
-    if(!email.includes('@ogr.cu.edu.tr')) { setHata("Sadece @ogr.cu.edu.tr maili geçerlidir."); return; }
-    setHata(""); setBilgi("Kod gönderiliyor... (Biraz sürebilir)"); setYukleniyor(true);
+    // Test için mail kontrolünü kaldırdım, istersen açabilirsin:
+    // if(!email.includes('@ogr.cu.edu.tr')) { setHata("Sadece @ogr.cu.edu.tr maili geçerlidir."); return; }
+    
+    setHata(""); 
+    setBilgi("Kod gönderiliyor... (Maksimum 12 saniye sürer)"); 
+    setYukleniyor(true);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
     try { 
-        const res = await fetch(`${API_URL}/kod-gonder`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email}) }); 
+        const res = await fetch(`${API_URL}/kod-gonder`, { 
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify({email}),
+            signal: controller.signal 
+        });
+        
+        clearTimeout(timeoutId); 
         const data = await res.json();
-        setYukleniyor(false);
-        if (data.success) { setBilgi("Kod gönderildi!"); setKayitAsama(2); } else { setHata(data.error || "Hata oluştu."); setBilgi(""); } 
-    } catch(e) { setYukleniyor(false); setHata("Sunucu yanıt vermedi."); } 
+        
+        if (data.success) { 
+            setBilgi(""); 
+            setKayitAsama(2); 
+        } else { 
+            setHata(data.error || "Hata oluştu."); 
+            setBilgi(""); 
+        } 
+    } catch(e) { 
+        if (e.name === 'AbortError') {
+            setHata("İşlem uzun sürdü. Kodun mail kutuna (veya spama) düşmüş olabilir. Lütfen kontrol et.");
+        } else {
+            setHata("Sunucuya bağlanılamadı. İnternetini kontrol et.");
+        }
+    } finally {
+        setYukleniyor(false); 
+    }
   };
 
   const kayitTamamla = async () => { 
@@ -97,7 +129,12 @@ function GirisModal({ kapali, kapat, tip }) {
             <> <input type="email" placeholder="E-posta" value={email} onChange={e => setEmail(e.target.value)} className="modal-input" autoComplete="off" /> <input type="password" placeholder="Şifre" value={password} onChange={e => setPassword(e.target.value)} className="modal-input" autoComplete="off" /> <button onClick={girisYap} className="modal-btn" disabled={yukleniyor}>{yukleniyor ? 'Giriş Yapılıyor...' : 'Giriş Yap'}</button> </> 
           ) : ( 
             kayitAsama === 1 ? ( 
-              <> <p style={{fontSize:'13px', color:'#666', margin:0, textAlign:'center'}}>Sadece <b>@ogr.cu.edu.tr</b> maili ile kayıt olabilirsin.</p> <input type="email" placeholder="E-posta (@ogr.cu.edu.tr)" value={email} onChange={e => setEmail(e.target.value)} className="modal-input" autoComplete="off" /> <button onClick={kodGonder} className="modal-btn" disabled={yukleniyor} style={{opacity: yukleniyor ? 0.7 : 1}}>{yukleniyor ? 'Gönderiliyor...' : 'Kod Gönder'}</button> <div style={{textAlign:'center', marginTop:10}}><span onClick={() => setKayitAsama(2)} style={{fontSize:'13px', color:'#004aad', cursor:'pointer', textDecoration:'underline'}}>Zaten kodum var, doğrula &gt;</span></div> </> 
+              <> 
+                <p style={{fontSize:'13px', color:'#666', margin:0, textAlign:'center'}}>Sadece <b>@ogr.cu.edu.tr</b> maili ile kayıt olabilirsin.</p> 
+                <input type="email" placeholder="E-posta (@ogr.cu.edu.tr)" value={email} onChange={e => setEmail(e.target.value)} className="modal-input" autoComplete="off" /> 
+                <button onClick={kodGonder} className="modal-btn" disabled={yukleniyor} style={{opacity: yukleniyor ? 0.7 : 1}}>{yukleniyor ? 'Gönderiliyor...' : 'Kod Gönder'}</button> 
+                <div style={{textAlign:'center', marginTop:10}}><span onClick={() => setKayitAsama(2)} style={{fontSize:'13px', color:'#004aad', cursor:'pointer', textDecoration:'underline'}}>Zaten kodum var, doğrula &gt;</span></div> 
+              </> 
             ) : ( 
               <> <div style={{display:'flex', alignItems:'center', marginBottom:5}}><button onClick={()=>setKayitAsama(1)} style={{background:'none', border:'none', cursor:'pointer', fontSize:'18px'}}>⬅️</button><p style={{margin:'0 auto', fontSize:'0.9em'}}>Kodu gir:</p></div> <input type="text" placeholder="123456" value={code} onChange={e => setCode(e.target.value)} className="modal-input" maxLength={6} style={{textAlign:'center', letterSpacing:5}}/> <input type="text" placeholder="Takma Ad" value={nickname} onChange={e => setNickname(e.target.value)} className="modal-input" autoComplete="off" /> <input type="password" placeholder="Şifre Belirle" value={password} onChange={e => setPassword(e.target.value)} className="modal-input" autoComplete="off" /> <button onClick={kayitTamamla} className="modal-btn" style={{background:'#28a745'}}>Kayıt Ol</button> </> 
             ) 
@@ -265,11 +302,14 @@ function AnaSayfa() {
                     <h3 style={{margin:0, color:'#004aad'}}>Menü</h3>
                     <button className="close-menu" onClick={()=>setMobilMenuAcik(false)}>✖</button>
                   </div>
+                  
                   {kullanici && kullanici.nickname === 'baraykanat' && <div onClick={() => navigate('/admin')} className="menu-item admin-btn">👑 Admin Paneli</div>}
+                  
                   <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
                       {menuler.map(menu=><div key={menu.id} onClick={()=>{navigate(menu.link);setMobilMenuAcik(false)}} className="menu-item"><span>{menu.icon}</span>{menu.title}</div>)}
                   </div>
               </div>
+              
               <div style={{marginTop: '20px', borderTop:'1px solid #eee', paddingTop:'20px'}}>
                   <h3 style={{margin:'0 0 10px 0', color:'#444'}}>İletişim</h3>
                   {!iletisimAcik ? <button onClick={()=>setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> : <div><textarea className="msg-input" value={mesaj} onChange={e=>setMesaj(e.target.value)}/><button onClick={mesajGonder} className="send-btn" style={{width:'100%'}}>Gönder</button></div>}
@@ -286,7 +326,7 @@ function AnaSayfa() {
   return (
     <div className="main-container">
       <GlobalStyles /> 
-      <div className="beta-text">Beta 0.33</div>
+      <div className="beta-text">Beta 0.32</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
       {/* 1. MENÜ BUTONU (EN SOL ÜSTE SABİTLENMİŞ) */}
@@ -325,7 +365,7 @@ function AnaSayfa() {
 
           {!kullanici ? ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 15px 0' }}>Hoş Geldin</h2> <p style={{ color: '#555', marginBottom: '30px', fontSize: '15px' }}>Yorum yapmak için giriş yapmalısın.</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '220px', margin: '0 auto' }}> <button onClick={() => { setModalTip('giris'); setModalAcik(true); }} className="login-btn">Giriş Yap</button> <button onClick={() => { setModalTip('kayit'); setModalAcik(true); }} className="register-btn">Kayıt Ol</button> </div> </> ) : ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 10px 0' }}>{kullanici.nickname}</h2> <p style={{ color: '#555', marginBottom: '30px' }}>Giriş yaptın.</p> <button onClick={cikisYap} className="logout-btn">Çıkış Yap</button> </> )}
           <div className="donation-bar-container">
-            <p className="donation-text">2025 31 Aralık tarihine kadar her 600 yorum için<br/> Darüşşafaka Cemiyetine 200 lira bağış!</p>
+            <p className="donation-text">2025 31 Aralık tarihine kadar her 200 yorum için<br/> Darüşşafaka Cemiyetine 200 lira bağış!</p>
             <div className="progress-bg"><div className="progress-fill" style={{ width: `${barYuzdesi}%` }}></div></div>
             <small style={{ color: '#777' }}>{toplamYorum} / 600 Yorum</small>
           </div>
@@ -395,7 +435,6 @@ function HocalarSayfasi() { const [tumHocalar, setTumHocalar] = useState([]); co
   return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={geriDon} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliHoca ? 'Hoca Bul' : seciliHoca}</h2> </div> {!seciliHoca ? ( <div> <input type="text" placeholder="Hoca adı ara..." value={hocaArama} onChange={(e) => setHocaArama(e.target.value)} style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #eee', marginBottom: '20px', outline: 'none', backgroundColor: '#fff' }} /> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisHocalar.slice(0, 30).map((item, index) => ( <div key={index} onClick={() => hocaGetir(item.hoca_adi)} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#444', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', display:'flex', alignItems:'center' }}> <span style={{marginRight:'10px', fontSize:'1.2em'}}>👨‍🏫</span> {item.hoca_adi} </div> ))} </div> </div> ) : ( <div> <input type="text" placeholder="Ders adı veya kodu ara..." value={dersArama} onChange={(e) => setDersArama(e.target.value)} style={{ width: '93%', padding: '15px', fontSize: '16px', borderRadius: '12px', border: '2px solid #e3f2fd', marginBottom: '20px', outline: 'none', backgroundColor: '#f1f8ff' }} /> <p style={{color:'#666', marginBottom:'10px'}}>Verdiği Dersler ({filtrelenmisDersler.length}):</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {filtrelenmisDersler.map((ders) => ( <div key={ders.id} onClick={() => derseGit(ders)} style={{ padding: '15px', backgroundColor: 'white', borderLeft: '5px solid #004aad', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor:'pointer' }}> <div style={{ fontWeight: 'bold', color: '#333', fontSize:'1.1em' }}><span style={{color: '#004aad', marginRight:'8px'}}>{ders.ders_kodu}</span> {ders.ders_adi}</div> <div style={{ fontSize: '0.85em', color: '#888', marginTop:'4px' }}>{ders.fakulte} - {ders.bolum}</div> </div> ))} </div> </div> )} </div> );
 }
 
-// --- İŞTE BU KISIM EKSİKTİ, ARTIK EKLENDİ ---
 function App() {
   return (
     <Router>
