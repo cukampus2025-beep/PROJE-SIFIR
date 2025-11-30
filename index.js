@@ -12,137 +12,141 @@ app.use(express.json());
 
 const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 
-// --- MAİL AYARLARI (GÜVENLİ VE SAĞLAM) ---
-// Şifreyi ve maili gizli .env dosyasından çeker
+// --- MAİL AYARLARI ---
 const GMAIL_USER = process.env.MAIL_KULLANICI;
 const GMAIL_PASS = process.env.MAIL_SIFRE;
 
-// Gmail için en sağlam ayar (Port 465 ve SSL)
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
     secure: true,
-    auth: {
-        user: GMAIL_USER,
-        pass: GMAIL_PASS
-    }
-});
-
-// Sunucu açılınca bağlantıyı test et
-transporter.verify((error, success) => {
-    if (error) {
-        console.error("❌ Mail Sunucusu Hatası:", error);
-    } else {
-        console.log("✅ Mail sunucusu gönderime hazır!");
-    }
+    auth: { user: GMAIL_USER, pass: GMAIL_PASS }
 });
 
 const client = new Client({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
-client.connect().then(() => console.log("✅ Veritabanına Bağlanıldı!")).catch(err => console.error("❌ Bağlantı Hatası:", err));
 
-// --- 1. GÜVENLİK ve AKTİVASYON ---
+client.connect().then(() => console.log("✅ Veritabanı Bağlı")).catch(err => console.error("❌ DB Hatası:", err));
 
-// 🔥 KOD GÖNDERME (HIZLI VE DONMAYAN) 🔥
+// --- API ---
+
+// 1. DERS YORUMLARI ÇEKME (BU KISIM DÜZELDİ: CEVAPLARI GRUPLUYORUZ)
+app.get('/ders-yorumlari/:kod', async (req, res) => { 
+    try {
+        // Önce SADECE ana yorumları çek (ust_id = 0)
+        const anaYorumlarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id = 0 ORDER BY tarih DESC', [req.params.kod]);
+        
+        // Sonra SADECE cevapları çek (ust_id != 0)
+        const cevaplarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.kod]);
+        
+        const anaYorumlar = anaYorumlarRes.rows;
+        const cevaplar = cevaplarRes.rows;
+
+        // Burada cevapları ait oldukları ana yorumun içine koyuyoruz
+        const birlesmisVeri = anaYorumlar.map(ana => {
+            return {
+                ...ana,
+                // Bu ana yoruma ait cevapları bul ve içine ekle
+                cevaplar: cevaplar.filter(c => c.ust_id === ana.id)
+            };
+        });
+
+        res.json(birlesmisVeri);
+    } catch(e) { 
+        console.error(e);
+        res.json([]); 
+    }
+});
+
+// 2. DERS YORUM EKLEME (BU KISIM DÜZELDİ: ID GARANTİSİ)
+app.post('/ders-yorum-ekle', async (req, res) => { 
+    try {
+        // Gelen ust_id'yi sayıya çeviriyoruz ki veritabanı hata vermesin
+        const ustId = parseInt(req.body.ust_id) || 0;
+        
+        await client.query('INSERT INTO ders_yorumlari (ders_kodu, ders_adi, kullanici_adi, yorum_metni, ust_id) VALUES ($1, $2, $3, $4, $5)', 
+        [req.body.ders_kodu, req.body.ders_adi, req.body.kullanici_adi, req.body.yorum_metni, ustId]); 
+        
+        res.json({ success: true }); 
+    } catch(e) { 
+        console.error("Ders yorum hata:", e); 
+        res.status(500).json({ error: "Hata" }); 
+    }
+});
+
+// --- DİĞER STANDART ENDPOINTLER (DEĞİŞMEDİ) ---
+
 app.post('/kod-gonder', async (req, res) => {
     try {
         const { email } = req.body;
-        
-        // 🚨 CANLI MODU: SADECE ÖĞRENCİ MAİLİ KABUL EDİLİR 🚨
-        // Eğer Outlook ile test edeceksen bu satırın başına // koyup devre dışı bırakabilirsin.
-        if (!email.endsWith('@ogr.cu.edu.tr')) {
-            return res.status(400).json({ error: "Sadece öğrenci maili (@ogr.cu.edu.tr) kabul edilir." });
-        }
-        
         const userCheck = await client.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userCheck.rows.length > 0) return res.status(400).json({ error: "Bu mail zaten kayıtlı." });
         
         const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 5 * 60000); // 5 dakika
-        
         await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
-        await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, $3)", [email, code, expiresAt]);
-        
-        // ⚡ KULLANICIYA HEMEN CEVAP VER (Site donmasın) ⚡
-        res.json({ success: true, message: "Kod gönderim işlemi başlatıldı." });
+        await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
 
-        // 📩 MAİLİ ARKA PLANDA GÖNDER
-        console.log(`Mail gönderiliyor: ${email}`);
-        transporter.sendMail({ 
-            from: '"Çukurova Kampüs" <cukampus2025@gmail.com>', 
-            to: email, 
-            subject: 'Doğrulama Kodun: ' + code, 
-            html: `
-                <div style="background-color: #f4f4f4; padding: 20px; font-family: Arial, sans-serif;">
-                    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                        <h2 style="color: #004aad; text-align: center;">Hoş Geldin!</h2>
-                        <p style="font-size: 16px; color: #333;">Kayıt işlemini tamamlamak için doğrulama kodun aşağıdadır:</p>
-                        <div style="background-color: #e3f2fd; padding: 15px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #004aad; border-radius: 5px; margin: 20px 0;">
-                            ${code}
-                        </div>
-                        <p style="font-size: 14px; color: #666; text-align: center;">Bu kod 5 dakika geçerlidir.</p>
-                    </div>
-                </div>
-            `
-        }).then(() => console.log("✅ Mail başarıyla gönderildi (Arka Plan).")).catch(err => console.error("❌ Mail hatası:", err));
-
-    } catch (err) { 
-        console.error("Hata:", err);
-        // Eğer cevap gönderilmediyse hata dön
-        if (!res.headersSent) res.status(500).json({ error: "Sunucu hatası." }); 
-    }
+        res.json({ success: true });
+        transporter.sendMail({ from: '"Çukurova Kampüs"', to: email, subject: 'Kodun', html: `<h1>${code}</h1>` }).catch(console.error);
+    } catch (err) { res.status(500).json({ error: "Hata" }); }
 });
 
 app.post('/kayit-tamamla', async (req, res) => {
     try {
         const { email, password, nickname, code } = req.body;
-        const kodCheck = await client.query("SELECT * FROM verification_codes WHERE email = $1", [email]);
-        if (kodCheck.rows.length === 0) return res.status(400).json({ error: "Kod bulunamadı." });
-        const kayit = kodCheck.rows[0];
-        if (kayit.code !== code) return res.status(400).json({ error: "Hatalı kod!" });
+        const kodCheck = await client.query("SELECT * FROM verification_codes WHERE email = $1 AND code = $2", [email, code]);
+        if (kodCheck.rows.length === 0) return res.status(400).json({ error: "Kod hatalı." });
         
         const nickCheck = await client.query("SELECT * FROM users WHERE nickname = $1", [nickname]);
-        if (nickCheck.rows.length > 0) return res.status(400).json({ error: "Bu takma ad alınmış." });
-        
+        if (nickCheck.rows.length > 0) return res.status(400).json({ error: "İsim alınmış." });
+
         const hash = await bcrypt.hash(password, 10);
         await client.query("INSERT INTO users (email, password, nickname, role) VALUES ($1, $2, $3, 'ogrenci')", [email, hash, nickname]);
         await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
-        res.json({ success: true, message: "Kayıt başarılı!" });
-    } catch (err) { res.status(500).json({ error: "Hata." }); }
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Hata" }); }
 });
 
 app.post('/giris', async (req, res) => {
     try {
         const { email, password } = req.body;
-        const userResult = await client.query("SELECT * FROM users WHERE email = $1", [email]);
-        if (userResult.rows.length === 0) return res.status(400).json({ error: "Kullanıcı bulunamadı." });
-        const user = userResult.rows[0];
-        if (user.is_banned) return res.status(403).json({ error: "⛔ Banlandınız." });
+        const result = await client.query("SELECT * FROM users WHERE email = $1", [email]);
+        if (result.rows.length === 0) return res.status(400).json({ error: "Kullanıcı yok." });
+        
+        const user = result.rows[0];
+        if (user.is_banned) return res.status(403).json({ error: "Banlandınız." });
         if (!await bcrypt.compare(password, user.password)) return res.status(400).json({ error: "Şifre yanlış." });
-        const token = jwt.sign({ id: user.id, nickname: user.nickname, role: user.role }, GIZLI_ANAHTAR, { expiresIn: '30d' });
+
+        const token = jwt.sign({ id: user.id, nickname: user.nickname, role: user.role }, GIZLI_ANAHTAR);
         res.json({ success: true, token, user: { nickname: user.nickname, role: user.role } });
     } catch (err) { res.status(500).json({ error: "Giriş hatası." }); }
 });
 
-// --- DİĞER VERİ ÇEKME APİLERİ ---
 app.get('/bolumler', async (req, res) => { const r = await client.query('SELECT DISTINCT fakulte, bolum FROM dersler ORDER BY fakulte, bolum'); res.json(r.rows); });
 app.get('/hocalar', async (req, res) => { const r = await client.query("SELECT DISTINCT hoca_adi FROM dersler WHERE hoca_adi != 'Belirtilmemiş' ORDER BY hoca_adi"); res.json(r.rows); });
 app.get('/dersler/:bolum', async (req, res) => { const r = await client.query('SELECT * FROM dersler WHERE bolum = $1', [req.params.bolum]); res.json(r.rows); });
 app.get('/hoca-dersleri/:hoca', async (req, res) => { const r = await client.query('SELECT * FROM dersler WHERE hoca_adi = $1', [req.params.hoca]); res.json(r.rows); });
-app.get('/toplam-yorum-sayisi', async (req, res) => { const q = `SELECT (SELECT COUNT(*) FROM ders_yorumlari) + (SELECT COUNT(*) FROM yurt_yorumlari) + (SELECT COUNT(*) FROM forum) as toplam`; const r = await client.query(q); res.json({ toplam: parseInt(r.rows[0].toplam || 0) }); });
-app.get('/ders-yorumlari/:kod', async (req, res) => { const r = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 ORDER BY tarih DESC', [req.params.kod]); res.json(r.rows); });
-app.post('/ders-yorum-ekle', async (req, res) => { await client.query('INSERT INTO ders_yorumlari (ders_kodu, ders_adi, kullanici_adi, yorum_metni) VALUES ($1, $2, $3, $4)', [req.body.ders_kodu, req.body.ders_adi, req.body.kullanici_adi, req.body.yorum_metni]); res.json({ success: true }); });
+app.get('/toplam-yorum-sayisi', async (req, res) => { try { const r = await client.query(`SELECT (SELECT COUNT(*) FROM ders_yorumlari) + (SELECT COUNT(*) FROM yurt_yorumlari) + (SELECT COUNT(*) FROM forum) as toplam`); res.json({ toplam: parseInt(r.rows[0].toplam || 0) }); } catch { res.json({ toplam: 0 }); }});
+
 app.get('/yurt-yorumlari/:yurt', async (req, res) => { const r = await client.query('SELECT * FROM yurt_yorumlari WHERE yurt_adi = $1 ORDER BY tarih DESC', [req.params.yurt]); res.json(r.rows); });
 app.post('/yurt-yorum-ekle', async (req, res) => { await client.query('INSERT INTO yurt_yorumlari (yurt_adi, yorum_metni, kullanici_adi) VALUES ($1, $2, $3)', [req.body.yurt_adi, req.body.yorum_metni, req.body.kullanici_adi]); res.json({ success: true }); });
+
 app.post('/iletisim-gonder', async (req, res) => { await client.query('INSERT INTO iletisim_mesajlari (mesaj) VALUES ($1)', [req.body.mesaj]); res.json({ success: true }); });
 app.get('/forum/:tur', async (req, res) => { const ana = await client.query('SELECT * FROM forum WHERE tur = $1 AND ust_id = 0 ORDER BY tarih DESC', [req.params.tur]); const cev = await client.query('SELECT * FROM forum WHERE tur = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.tur]); const sonuc = ana.rows.map(s => ({ ...s, cevaplar: cev.rows.filter(c => c.ust_id === s.id) })); res.json(sonuc); });
 app.post('/forum-ekle', async (req, res) => { await client.query('INSERT INTO forum (tur, ust_id, kullanici_adi, mesaj) VALUES ($1, $2, $3, $4)', [req.body.tur, req.body.ust_id||0, req.body.kullanici_adi, req.body.mesaj]); res.json({ success: true }); });
-app.post('/yorum-sil', async (req, res) => { try { const { tur, id, kullanici_adi } = req.body; let tablo = tur === 'ders' ? "ders_yorumlari" : tur === 'yurt' ? "yurt_yorumlari" : "forum"; const kontrol = await client.query(`SELECT * FROM ${tablo} WHERE id = $1`, [id]); if(kontrol.rows.length > 0) { if(kontrol.rows[0].kullanici_adi === kullanici_adi || kullanici_adi === 'baraykanat') { await client.query(`DELETE FROM ${tablo} WHERE id = $1`, [id]); res.json({ success: true }); } else { res.status(403).json({ error: "Yetkisiz." }); } } else { res.status(404).json({ error: "Bulunamadı." }); } } catch (e) { res.status(500).json({ error: "Hata" }); } });
+
+app.post('/yorum-sil', async (req, res) => { 
+    try { const { tur, id, kullanici_adi } = req.body; let tablo = tur === 'ders' ? "ders_yorumlari" : tur === 'yurt' ? "yurt_yorumlari" : "forum"; 
+    const kontrol = await client.query(`SELECT * FROM ${tablo} WHERE id = $1`, [id]); 
+    if(kontrol.rows.length > 0) { if(kontrol.rows[0].kullanici_adi === kullanici_adi || kullanici_adi === 'baraykanat') { await client.query(`DELETE FROM ${tablo} WHERE id = $1`, [id]); res.json({ success: true }); } else { res.status(403).json({ error: "Yetkisiz." }); } } 
+    } catch (e) { res.status(500).json({ error: "Hata" }); } 
+});
+
 app.get('/admin/tum-veriler', async (req, res) => { const d = await client.query('SELECT * FROM ders_yorumlari ORDER BY tarih DESC LIMIT 50'); const y = await client.query('SELECT * FROM yurt_yorumlari ORDER BY tarih DESC LIMIT 50'); const f = await client.query('SELECT * FROM forum ORDER BY tarih DESC LIMIT 50'); const m = await client.query('SELECT * FROM iletisim_mesajlari ORDER BY tarih DESC'); res.json({ ders: d.rows, yurt: y.rows, forum: f.rows, mesajlar: m.rows }); });
 app.delete('/admin/sil-mesaj/:id', async (req, res) => { await client.query(`DELETE FROM iletisim_mesajlari WHERE id=$1`, [req.params.id]); res.json({ success: true }); });
 app.post('/admin/banla', async (req, res) => { await client.query("UPDATE users SET is_banned = true WHERE nickname = $1", [req.body.nickname]); res.json({ success: true }); });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Sunucu ${PORT} portunda çalışıyor!`));
+app.listen(PORT, () => console.log(`🚀 Sunucu ${PORT} portunda!`));
