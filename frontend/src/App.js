@@ -274,14 +274,14 @@ function AnaSayfa() {
     { id: 2, title: 'Hocalar', icon: '👨‍🏫', link: '/hocalar' },
     { id: 3, title: 'Anonim', icon: '🎭', link: '/anonimler' },
     { id: 4, title: 'Yurtlar', icon: '🛏️', link: '/yurtlar' },
-    { id: 5, title: 'Sorular', icon: '❓', link: '/sorular' },
+    { id: 5, title: 'Soru-Cevap', icon: '❓', link: '/sorular' },
     { id: 6, title: 'Topluluklar', icon: '🤝', link: '/topluluklar' },
   ];
 
   return (
     <div className="main-container">
       <GlobalStyles /> 
-      <div className="beta-text">Beta 0.35</div>
+      <div className="beta-text">Beta 0.17</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
       <div className="hamburger-fixed" style={{
