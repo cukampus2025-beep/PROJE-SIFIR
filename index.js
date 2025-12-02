@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('pg');
-const https = require('https'); // Tünel kazıcı modül
+const https = require('https'); // Tünel kazıcı
 
 const app = express();
 app.use(cors());
@@ -43,7 +43,7 @@ function sendEmail(to, code) {
         method: 'POST',
         headers: {
             'accept': 'application/json',
-            'api-key': API_KEY, // Anahtar burada kullanılıyor
+            'api-key': API_KEY, // Anahtar burada
             'content-type': 'application/json',
             'content-length': data.length
         }
@@ -53,7 +53,7 @@ function sendEmail(to, code) {
         let body = '';
         res.on('data', (d) => body += d);
         res.on('end', () => {
-            if (res.statusCode === 201) {
+            if (res.statusCode === 201 || res.statusCode === 200) {
                 console.log(`✅ Mail API ile gitti: ${to}`);
             } else {
                 console.error(`❌ Mail API Hatası (${res.statusCode}):`, body);
@@ -81,10 +81,8 @@ app.post('/kod-gonder', async (req, res) => {
         await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
         await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
 
-        // Hızlı cevap (Site donmaz)
         res.json({ success: true, message: "Kod gönderildi." });
 
-        // Maili gönder
         sendEmail(email, code);
 
     } catch (err) { 
@@ -93,7 +91,7 @@ app.post('/kod-gonder', async (req, res) => {
     }
 });
 
-// --- DİĞERLERİ (AYNI) ---
+// --- DİĞERLERİ AYNI ---
 app.get('/ders-yorumlari/:kod', async (req, res) => { try { const anaYorumlarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND (ust_id = 0 OR ust_id IS NULL) ORDER BY tarih DESC', [req.params.kod]); const cevaplarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.kod]); const birlesmisVeri = anaYorumlarRes.rows.map(ana => ({ ...ana, cevaplar: cevaplarRes.rows.filter(c => c.ust_id === ana.id) })); res.json(birlesmisVeri); } catch(e) { res.json([]); } });
 app.post('/ders-yorum-ekle', async (req, res) => { try { const ustId = parseInt(req.body.ust_id) || 0; await client.query('INSERT INTO ders_yorumlari (ders_kodu, ders_adi, kullanici_adi, yorum_metni, ust_id) VALUES ($1, $2, $3, $4, $5)', [req.body.ders_kodu, req.body.ders_adi, req.body.kullanici_adi, req.body.yorum_metni, ustId]); res.json({ success: true }); } catch(e) { res.status(500).json({ error: "Hata" }); } });
 app.post('/kayit-tamamla', async (req, res) => { try { const { email, password, nickname, code } = req.body; const kodCheck = await client.query("SELECT * FROM verification_codes WHERE email = $1 AND code = $2", [email, code]); if (kodCheck.rows.length === 0) return res.status(400).json({ error: "Kod hatalı." }); const nickCheck = await client.query("SELECT * FROM users WHERE nickname = $1", [nickname]); if (nickCheck.rows.length > 0) return res.status(400).json({ error: "Bu isim alınmış." }); const hash = await bcrypt.hash(password, 10); await client.query("INSERT INTO users (email, password, nickname, role) VALUES ($1, $2, $3, 'ogrenci')", [email, hash, nickname]); await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); res.json({ success: true }); } catch (err) { res.status(500).json({ error: "Hata" }); } });
