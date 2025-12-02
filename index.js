@@ -14,14 +14,22 @@ const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 
 // --- MAİL AYARLARI ---
 const GMAIL_USER = process.env.MAIL_KULLANICI;
-// Şifredeki boşlukları otomatik silen yapı (Render'a boşluklu girsen de çalışır)
+// Şifredeki boşlukları otomatik silen yapı
 const GMAIL_PASS = process.env.MAIL_SIFRE ? process.env.MAIL_SIFRE.replace(/\s+/g, '') : "";
 
+// 🔥 DÜZELTME BURADA: Port 465 yerine 587 kullanıyoruz (Timeout hatası için)
 const transporter = nodemailer.createTransport({
+    service: 'gmail', 
+    auth: {
+        user: GMAIL_USER,
+        pass: GMAIL_PASS
+    },
     host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: { user: GMAIL_USER, pass: GMAIL_PASS }
+    port: 587,        // 465 yerine 587 (Daha stabil)
+    secure: false,    // 587 için false olmalı (TLS)
+    tls: {
+        rejectUnauthorized: false // Sertifika hatalarını önler
+    }
 });
 
 // Bağlantı testi
@@ -29,7 +37,7 @@ transporter.verify((error, success) => {
     if (error) {
         console.error("❌ Mail Sunucusu Hatası:", error);
     } else {
-        console.log("✅ Mail sunucusu hazır ve şifre doğrulandı!");
+        console.log("✅ Mail sunucusu hazır (Port 587) ve şifre doğrulandı!");
     }
 });
 
@@ -86,7 +94,6 @@ app.post('/kod-gonder', async (req, res) => {
 
     } catch (err) { 
         console.error("❌ Genel Hata:", err);
-        // Eğer veritabanı aşamasında patlarsa hata dön
         if (!res.headersSent) {
             res.status(500).json({ error: "İşlem sırasında bir hata oluştu." }); 
         }
