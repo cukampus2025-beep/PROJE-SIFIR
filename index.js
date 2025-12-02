@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-// 🔥 1. GMAIL BAĞLANTI SORUNUNU ÇÖZEN KOD (IPv4 Zorlaması)
+// 1. DNS Ayarı (Hala gerekli, kalsın)
 const dns = require('node:dns');
 try {
     dns.setDefaultResultOrder('ipv4first'); 
@@ -23,15 +23,19 @@ const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 
 // --- MAİL AYARLARI ---
 const GMAIL_USER = process.env.MAIL_KULLANICI;
-// Şifredeki boşlukları siler
 const GMAIL_PASS = process.env.MAIL_SIFRE ? process.env.MAIL_SIFRE.replace(/\s+/g, '') : "";
 
-// 🔥 2. GMAIL İÇİN STANDART AYARLAR
+// 🔥 DÜZELTME BURADA: 'service: gmail' YERİNE MANUEL AYAR YAPIYORUZ
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',  // Adresi elle yazdık
+    port: 587,               // 465 yerine 587 (TLS) kullanıyoruz. Render bunu sever.
+    secure: false,           // 587 için false olmalı
     auth: {
         user: GMAIL_USER,
         pass: GMAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false // Sertifika sorunlarını yoksay
     }
 });
 
@@ -40,7 +44,7 @@ transporter.verify((error, success) => {
     if (error) {
         console.error("❌ Gmail Bağlantı Hatası:", error);
     } else {
-        console.log("✅ Gmail sunucusu hazır!");
+        console.log("✅ Gmail sunucusu hazır (Port 587) ve şifre doğru!");
     }
 });
 
@@ -53,7 +57,6 @@ client.connect().then(() => console.log("✅ Veritabanı Bağlı")).catch(err =>
 
 // --- API ENDPOINTLERİ ---
 
-// 🔥 1. KOD GÖNDERME
 app.post('/kod-gonder', async (req, res) => {
     try {
         const { email } = req.body;
@@ -93,7 +96,7 @@ app.post('/kod-gonder', async (req, res) => {
     }
 });
 
-// 🔥 2. DİĞER FONKSİYONLAR
+// Diğer fonksiyonlar aynen kalsın
 app.get('/ders-yorumlari/:kod', async (req, res) => { try { const anaYorumlarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND (ust_id = 0 OR ust_id IS NULL) ORDER BY tarih DESC', [req.params.kod]); const cevaplarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.kod]); const birlesmisVeri = anaYorumlarRes.rows.map(ana => ({ ...ana, cevaplar: cevaplarRes.rows.filter(c => c.ust_id === ana.id) })); res.json(birlesmisVeri); } catch(e) { res.json([]); } });
 app.post('/ders-yorum-ekle', async (req, res) => { try { const ustId = parseInt(req.body.ust_id) || 0; await client.query('INSERT INTO ders_yorumlari (ders_kodu, ders_adi, kullanici_adi, yorum_metni, ust_id) VALUES ($1, $2, $3, $4, $5)', [req.body.ders_kodu, req.body.ders_adi, req.body.kullanici_adi, req.body.yorum_metni, ustId]); res.json({ success: true }); } catch(e) { res.status(500).json({ error: "Hata" }); } });
 app.post('/kayit-tamamla', async (req, res) => { try { const { email, password, nickname, code } = req.body; const kodCheck = await client.query("SELECT * FROM verification_codes WHERE email = $1 AND code = $2", [email, code]); if (kodCheck.rows.length === 0) return res.status(400).json({ error: "Kod hatalı." }); const nickCheck = await client.query("SELECT * FROM users WHERE nickname = $1", [nickname]); if (nickCheck.rows.length > 0) return res.status(400).json({ error: "Bu isim alınmış." }); const hash = await bcrypt.hash(password, 10); await client.query("INSERT INTO users (email, password, nickname, role) VALUES ($1, $2, $3, 'ogrenci')", [email, hash, nickname]); await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); res.json({ success: true }); } catch (err) { res.status(500).json({ error: "Hata" }); } });
