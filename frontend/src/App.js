@@ -281,7 +281,7 @@ function AnaSayfa() {
   return (
     <div className="main-container">
       <GlobalStyles /> 
-      <div className="beta-text">Beta 0.13</div>
+      <div className="beta-text">Beta 0.3</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
       <div className="hamburger-fixed" style={{
@@ -343,7 +343,7 @@ function AnaSayfa() {
             <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.5', marginBottom: '15px', marginTop: 0 }}>Tavsiye ve önerileriniz için:</p>
             {!iletisimAcik ?
                 ( <button onClick={() => setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> ) : ( <div> <textarea rows="4" value={mesaj} onChange={(e) => setMesaj(e.target.value)} className="msg-input" /> <div style={{ display: 'flex', gap: '10px' }}> <button onClick={mesajGonder} className="send-btn">Gönder</button> <button onClick={() => setIletisimAcik(false)} className="cancel-btn">İptal</button> </div> </div> )}
-            <div style={{marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee', textAlign:'center'}}> <a href="mailto:cukampusdestek@outlook.com" style={{color: '#004aad', textDecoration: 'none', fontWeight:'bold'}}>📧 Mail At</a> </div>
+            <div style={{marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee', textAlign:'center'}}> <a href="mailto:cukampus2025@gmail.com" style={{color: '#004aad', textDecoration: 'none', fontWeight:'bold'}}>📧 Mail At</a> </div>
           </div>
         </div>
       </div>
