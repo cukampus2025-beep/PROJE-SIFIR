@@ -21,21 +21,29 @@ app.use(express.json());
 
 const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 
-// --- MAİL AYARLARI ---
+// --- DEDEKTİF MODU BAŞLIYOR ---
 const GMAIL_USER = process.env.MAIL_KULLANICI;
+// Şifredeki boşlukları temizle
 const GMAIL_PASS = process.env.MAIL_SIFRE ? process.env.MAIL_SIFRE.replace(/\s+/g, '') : "";
 
-// 🔥 DÜZELTME BURADA: 'service: gmail' YERİNE MANUEL AYAR YAPIYORUZ
+// 🔥 LOGLARA BAK: Render ne okuyor görelim
+console.log("------------------------------------------------");
+console.log("🕵️‍♂️ MAİL AYARLARI KONTROLÜ:");
+console.log("MAIL_KULLANICI:", `"${GMAIL_USER}"`); // Tırnak içinde gösterir ki boşluk varsa görelim
+console.log("ŞİFRE UZUNLUĞU:", GMAIL_PASS ? GMAIL_PASS.length : "Yok"); // 16 olmalı
+console.log("ŞİFRE BAŞLANGICI:", GMAIL_PASS ? GMAIL_PASS.substring(0, 2) + "****" : "Yok");
+console.log("------------------------------------------------");
+
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',  // Adresi elle yazdık
-    port: 587,               // 465 yerine 587 (TLS) kullanıyoruz. Render bunu sever.
-    secure: false,           // 587 için false olmalı
+    host: 'smtp.gmail.com', 
+    port: 587,              
+    secure: false,          
     auth: {
         user: GMAIL_USER,
         pass: GMAIL_PASS
     },
     tls: {
-        rejectUnauthorized: false // Sertifika sorunlarını yoksay
+        rejectUnauthorized: false
     }
 });
 
@@ -44,7 +52,7 @@ transporter.verify((error, success) => {
     if (error) {
         console.error("❌ Gmail Bağlantı Hatası:", error);
     } else {
-        console.log("✅ Gmail sunucusu hazır (Port 587) ve şifre doğru!");
+        console.log("✅ Gmail sunucusu hazır ve şifre doğru!");
     }
 });
 
@@ -96,7 +104,7 @@ app.post('/kod-gonder', async (req, res) => {
     }
 });
 
-// Diğer fonksiyonlar aynen kalsın
+// Diğer fonksiyonlar (Aynı)
 app.get('/ders-yorumlari/:kod', async (req, res) => { try { const anaYorumlarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND (ust_id = 0 OR ust_id IS NULL) ORDER BY tarih DESC', [req.params.kod]); const cevaplarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.kod]); const birlesmisVeri = anaYorumlarRes.rows.map(ana => ({ ...ana, cevaplar: cevaplarRes.rows.filter(c => c.ust_id === ana.id) })); res.json(birlesmisVeri); } catch(e) { res.json([]); } });
 app.post('/ders-yorum-ekle', async (req, res) => { try { const ustId = parseInt(req.body.ust_id) || 0; await client.query('INSERT INTO ders_yorumlari (ders_kodu, ders_adi, kullanici_adi, yorum_metni, ust_id) VALUES ($1, $2, $3, $4, $5)', [req.body.ders_kodu, req.body.ders_adi, req.body.kullanici_adi, req.body.yorum_metni, ustId]); res.json({ success: true }); } catch(e) { res.status(500).json({ error: "Hata" }); } });
 app.post('/kayit-tamamla', async (req, res) => { try { const { email, password, nickname, code } = req.body; const kodCheck = await client.query("SELECT * FROM verification_codes WHERE email = $1 AND code = $2", [email, code]); if (kodCheck.rows.length === 0) return res.status(400).json({ error: "Kod hatalı." }); const nickCheck = await client.query("SELECT * FROM users WHERE nickname = $1", [nickname]); if (nickCheck.rows.length > 0) return res.status(400).json({ error: "Bu isim alınmış." }); const hash = await bcrypt.hash(password, 10); await client.query("INSERT INTO users (email, password, nickname, role) VALUES ($1, $2, $3, 'ogrenci')", [email, hash, nickname]); await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); res.json({ success: true }); } catch (err) { res.status(500).json({ error: "Hata" }); } });
