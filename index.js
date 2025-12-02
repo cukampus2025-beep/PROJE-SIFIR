@@ -2,20 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('pg');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-// Nodemailer'ı sildik, yerine yerel https modülünü kullanıyoruz (Duvar delici)
-const https = require('https');
+const https = require('https'); // Tünel kazıcı modül
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
-
-// --- API AYARLARI ---
-const BREVO_API_KEY = process.env.MAIL_SIFRE; // xkeysib... ile başlayan anahtar
-const SENDER_EMAIL = process.env.MAIL_KULLANICI; // Brevo'daki mailin
+// --- MAİL AYARLARI ---
+const API_KEY = process.env.MAIL_SIFRE;     // xkeysib... olan anahtar
+const SENDER_EMAIL = process.env.MAIL_KULLANICI; // cukampus2025@gmail.com
 
 const client = new Client({
     connectionString: process.env.DATABASE_URL,
@@ -24,11 +19,11 @@ const client = new Client({
 
 client.connect().then(() => console.log("✅ Veritabanı Bağlı")).catch(err => console.error("❌ DB Hatası:", err));
 
-// --- ÖZEL FONKSİYON: API İLE MAİL GÖNDERME ---
-function sendEmailViaAPI(toEmail, code) {
+// --- API İLE MAİL GÖNDERME FONKSİYONU ---
+function sendEmail(to, code) {
     const data = JSON.stringify({
         sender: { name: "Çukurova Kampüs", email: SENDER_EMAIL },
-        to: [{ email: toEmail }],
+        to: [{ email: to }],
         subject: "Doğrulama Kodun",
         htmlContent: `
             <div style="background:#f4f4f4; padding:20px; font-family:sans-serif;">
@@ -38,8 +33,7 @@ function sendEmailViaAPI(toEmail, code) {
                     <h1 style="letter-spacing:5px; background:#eee; padding:10px; border-radius:5px;">${code}</h1>
                     <p style="color:#999; font-size:12px;">Bu kod 5 dakika geçerlidir.</p>
                 </div>
-            </div>
-        `
+            </div>`
     });
 
     const options = {
@@ -49,27 +43,25 @@ function sendEmailViaAPI(toEmail, code) {
         method: 'POST',
         headers: {
             'accept': 'application/json',
-            'api-key': BREVO_API_KEY, // API Anahtarını buraya koyuyoruz
-            'content-type': 'application/json'
+            'api-key': API_KEY, // Anahtar burada kullanılıyor
+            'content-type': 'application/json',
+            'content-length': data.length
         }
     };
 
     const req = https.request(options, (res) => {
-        let responseBody = '';
-        res.on('data', (chunk) => { responseBody += chunk; });
+        let body = '';
+        res.on('data', (d) => body += d);
         res.on('end', () => {
-            if (res.statusCode === 201 || res.statusCode === 200) {
-                console.log(`✅ Mail API ile başarıyla gönderildi: ${toEmail}`);
+            if (res.statusCode === 201) {
+                console.log(`✅ Mail API ile gitti: ${to}`);
             } else {
-                console.error(`❌ Mail API Hatası: ${res.statusCode}`, responseBody);
+                console.error(`❌ Mail API Hatası (${res.statusCode}):`, body);
             }
         });
     });
 
-    req.on('error', (e) => {
-        console.error(`❌ İstek Hatası: ${e.message}`);
-    });
-
+    req.on('error', (e) => console.error("❌ İstek Hatası:", e));
     req.write(data);
     req.end();
 }
@@ -79,29 +71,29 @@ function sendEmailViaAPI(toEmail, code) {
 app.post('/kod-gonder', async (req, res) => {
     try {
         const { email } = req.body;
-        console.log(`İşlem başlatıldı: ${email}`);
+        console.log(`İşlem: ${email}`);
 
         const userCheck = await client.query("SELECT * FROM users WHERE email = $1", [email]);
-        if (userCheck.rows.length > 0) return res.status(400).json({ error: "Bu mail zaten kayıtlı." });
+        if (userCheck.rows.length > 0) return res.status(400).json({ error: "Bu mail kayıtlı." });
         
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         
         await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
         await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
 
-        // Kullanıcıyı hemen yanıtla
+        // Hızlı cevap (Site donmaz)
         res.json({ success: true, message: "Kod gönderildi." });
 
-        // 🔥 MAİLİ YENİ YÖNTEMLE (API) GÖNDER
-        sendEmailViaAPI(email, code);
+        // Maili gönder
+        sendEmail(email, code);
 
     } catch (err) { 
-        console.error("❌ Sunucu Hatası:", err);
-        if (!res.headersSent) res.status(500).json({ error: "Hata oluştu." });
+        console.error("Hata:", err);
+        if (!res.headersSent) res.status(500).json({ error: "Hata." });
     }
 });
 
-// --- DİĞERLERİ AYNI ---
+// --- DİĞERLERİ (AYNI) ---
 app.get('/ders-yorumlari/:kod', async (req, res) => { try { const anaYorumlarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND (ust_id = 0 OR ust_id IS NULL) ORDER BY tarih DESC', [req.params.kod]); const cevaplarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.kod]); const birlesmisVeri = anaYorumlarRes.rows.map(ana => ({ ...ana, cevaplar: cevaplarRes.rows.filter(c => c.ust_id === ana.id) })); res.json(birlesmisVeri); } catch(e) { res.json([]); } });
 app.post('/ders-yorum-ekle', async (req, res) => { try { const ustId = parseInt(req.body.ust_id) || 0; await client.query('INSERT INTO ders_yorumlari (ders_kodu, ders_adi, kullanici_adi, yorum_metni, ust_id) VALUES ($1, $2, $3, $4, $5)', [req.body.ders_kodu, req.body.ders_adi, req.body.kullanici_adi, req.body.yorum_metni, ustId]); res.json({ success: true }); } catch(e) { res.status(500).json({ error: "Hata" }); } });
 app.post('/kayit-tamamla', async (req, res) => { try { const { email, password, nickname, code } = req.body; const kodCheck = await client.query("SELECT * FROM verification_codes WHERE email = $1 AND code = $2", [email, code]); if (kodCheck.rows.length === 0) return res.status(400).json({ error: "Kod hatalı." }); const nickCheck = await client.query("SELECT * FROM users WHERE nickname = $1", [nickname]); if (nickCheck.rows.length > 0) return res.status(400).json({ error: "Bu isim alınmış." }); const hash = await bcrypt.hash(password, 10); await client.query("INSERT INTO users (email, password, nickname, role) VALUES ($1, $2, $3, 'ogrenci')", [email, hash, nickname]); await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); res.json({ success: true }); } catch (err) { res.status(500).json({ error: "Hata" }); } });
