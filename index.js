@@ -1,4 +1,12 @@
 require('dotenv').config();
+// 🔥 1. SİHİRLİ DOKUNUŞ: DNS ve IPv4 AYARI (Bunu en başa ekliyoruz)
+const dns = require('node:dns');
+try {
+    dns.setDefaultResultOrder('ipv4first'); // Sadece IPv4 kullan, IPv6'da takılma!
+} catch (e) {
+    console.log("DNS ayarı bu Node sürümünde gerekli değil veya desteklenmiyor.");
+}
+
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('pg');
@@ -14,29 +22,34 @@ const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 
 // --- MAİL AYARLARI ---
 const GMAIL_USER = process.env.MAIL_KULLANICI;
-// Şifredeki boşlukları otomatik silen yapı
 const GMAIL_PASS = process.env.MAIL_SIFRE ? process.env.MAIL_SIFRE.replace(/\s+/g, '') : "";
 
-// 🔥 DÜZELTME: 'service: gmail' satırını kaldırdık. Artık Port 587'yi dinleyecek.
+// 🔥 2. DÜZELTME: Port 465 + Secure True (IPv4 ile birleşince en sağlamı budur)
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: 587,        // TLS Portu (Render ve çoğu sunucuda açıktır)
-    secure: false,    // 587 için false OLMALI
+    port: 465,
+    secure: true, // 465 için true olmalı
     auth: {
         user: GMAIL_USER,
         pass: GMAIL_PASS
     },
     tls: {
-        rejectUnauthorized: false // Sertifika hatalarını yoksay
-    }
+        // Bu ayarlar sunucu sertifikası nazlıysa işe yarar
+        rejectUnauthorized: false,
+        ciphers: 'SSLv3'
+    },
+    // Bağlantı zaman aşımı ayarları (Beklemeyi engellemek için)
+    connectionTimeout: 10000, // 10 saniye içinde bağlanamazsa hata ver
+    greetingTimeout: 5000,    // Selamlaşma 5 saniyeyi geçerse kapat
+    socketTimeout: 10000      // Veri akışı durursa kapat
 });
 
 // Bağlantı testi
 transporter.verify((error, success) => {
     if (error) {
-        console.error("❌ Mail Sunucusu Hatası:", error);
+        console.error("❌ Mail Sunucusu Başlangıç Hatası:", error);
     } else {
-        console.log("✅ Mail sunucusu hazır (Port 587) ve şifre doğrulandı!");
+        console.log("✅ Mail sunucusu hazır (Port 465 / IPv4 Forced)");
     }
 });
 
@@ -55,21 +68,17 @@ app.post('/kod-gonder', async (req, res) => {
         const { email } = req.body;
         console.log(`Mail işlem isteği: ${email}`);
 
-        // Kullanıcı var mı kontrol et
         const userCheck = await client.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userCheck.rows.length > 0) return res.status(400).json({ error: "Bu mail zaten kayıtlı." });
         
-        // 6 haneli kodu oluştur
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // 🔥 ÖNCE VERİTABANINA YAZ (Hızlı İşlem)
         await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
         await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
 
-        // 🔥 KULLANICIYI BEKLETME, HEMEN CEVAP VER
         res.json({ success: true, message: "Kod gönderildi." });
 
-        // 🔥 MAİLİ ARKA PLANDA GÖNDER (Await YOK)
+        // Mail Gönderimi
         transporter.sendMail({ 
             from: '"Çukurova Kampüs" <cukampus2025@gmail.com>', 
             to: email, 
@@ -84,16 +93,16 @@ app.post('/kod-gonder', async (req, res) => {
                     </div>
                 </div>
             ` 
+        }).then(info => {
+            console.log(`✅ Mail başarıyla teslim edildi: ${info.messageId}`);
         }).catch(mailError => {
-            // Mail gitmezse sunucu loguna yaz, ama kullanıcıyı etkileme
-            console.error(`❌ Mail gönderme hatası (${email}):`, mailError);
+            console.error(`❌ Mail gönderme hatası (Detaylı):`, mailError);
         });
 
-        console.log("✅ Kod üretildi, cevap verildi, mail kuyruğa alındı.");
+        console.log("✅ Kod üretildi, veritabanına yazıldı.");
 
     } catch (err) { 
         console.error("❌ Genel Hata:", err);
-        // Eğer veritabanı aşamasında patlarsa hata dön
         if (!res.headersSent) {
             res.status(500).json({ error: "İşlem sırasında bir hata oluştu." }); 
         }
