@@ -1,4 +1,12 @@
 require('dotenv').config();
+// 🔥 1. SİHİRLİ DOKUNUŞ: DNS ve IPv4 AYARI (Timeout'u engeller)
+const dns = require('node:dns');
+try {
+    dns.setDefaultResultOrder('ipv4first'); 
+} catch (e) {
+    console.log("IPv4 zorlaması bu Node sürümünde gerekli değil.");
+}
+
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('pg');
@@ -12,30 +20,33 @@ app.use(express.json());
 
 const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 
-// --- MAİL AYARLARI (BREVO / SMTP RELAY) ---
-const MAIL_USER = process.env.MAIL_KULLANICI; // Brevo hesap mailin
-const MAIL_PASS = process.env.MAIL_SIFRE;     // Brevo'dan aldığın SMTP Key
+// --- MAİL AYARLARI ---
+const MAIL_USER = process.env.MAIL_KULLANICI;
+const MAIL_PASS = process.env.MAIL_SIFRE;
 
-// 🔥 KESİN ÇÖZÜM: Brevo SMTP Ayarları
+// 🔥 2. DEĞİŞİKLİK: Port 2525 (En güvenli yedek liman)
 const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com", // Gmail yerine Brevo kullanıyoruz
-    port: 587,
-    secure: false, // TLS kullanır
+    host: "smtp-relay.brevo.com",
+    port: 2525,       // 587 yerine 2525 kullanıyoruz. Render bunu sever.
+    secure: false,    // TLS kullanır
     auth: {
         user: MAIL_USER,
         pass: MAIL_PASS
     },
     tls: {
         rejectUnauthorized: false
-    }
+    },
+    // Bağlantı zaman aşımı ayarları
+    connectionTimeout: 10000,
+    greetingTimeout: 5000
 });
 
 // Bağlantı testi
 transporter.verify((error, success) => {
     if (error) {
-        console.error("❌ SMTP Bağlantı Hatası:", error);
+        console.error("❌ SMTP Bağlantı Hatası (Port 2525):", error);
     } else {
-        console.log("✅ SMTP sunucusu hazır (Brevo)!");
+        console.log("✅ SMTP sunucusu hazır (Brevo - Port 2525)!");
     }
 });
 
@@ -62,12 +73,10 @@ app.post('/kod-gonder', async (req, res) => {
         await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
         await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
 
-        // Kullanıcıyı hemen yanıtla
         res.json({ success: true, message: "Kod gönderildi." });
 
-        // Maili gönder (Brevo üzerinden)
         transporter.sendMail({ 
-            from: '"Çukurova Kampüs" <' + MAIL_USER + '>', // Gönderen yine senin mailin görünür
+            from: '"Çukurova Kampüs" <' + MAIL_USER + '>', 
             to: email, 
             subject: 'Doğrulama Kodun', 
             html: `
@@ -80,7 +89,7 @@ app.post('/kod-gonder', async (req, res) => {
                     </div>
                 </div>
             ` 
-        }).catch(err => console.error("Mail gönderilemedi:", err));
+        }).catch(err => console.error("❌ Mail Gönderilemedi:", err));
 
         console.log("✅ Kod üretildi, işlem tamam.");
 
