@@ -17,18 +17,17 @@ const GMAIL_USER = process.env.MAIL_KULLANICI;
 // Şifredeki boşlukları otomatik silen yapı
 const GMAIL_PASS = process.env.MAIL_SIFRE ? process.env.MAIL_SIFRE.replace(/\s+/g, '') : "";
 
-// 🔥 DÜZELTME BURADA: Port 465 yerine 587 kullanıyoruz (Timeout hatası için)
+// 🔥 DÜZELTME: 'service: gmail' satırını kaldırdık. Artık Port 587'yi dinleyecek.
 const transporter = nodemailer.createTransport({
-    service: 'gmail', 
+    host: "smtp.gmail.com",
+    port: 587,        // TLS Portu (Render ve çoğu sunucuda açıktır)
+    secure: false,    // 587 için false OLMALI
     auth: {
         user: GMAIL_USER,
         pass: GMAIL_PASS
     },
-    host: "smtp.gmail.com",
-    port: 587,        // 465 yerine 587 (Daha stabil)
-    secure: false,    // 587 için false olmalı (TLS)
     tls: {
-        rejectUnauthorized: false // Sertifika hatalarını önler
+        rejectUnauthorized: false // Sertifika hatalarını yoksay
     }
 });
 
@@ -94,6 +93,7 @@ app.post('/kod-gonder', async (req, res) => {
 
     } catch (err) { 
         console.error("❌ Genel Hata:", err);
+        // Eğer veritabanı aşamasında patlarsa hata dön
         if (!res.headersSent) {
             res.status(500).json({ error: "İşlem sırasında bir hata oluştu." }); 
         }
