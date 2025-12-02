@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-// DNS Ayarı (Garanti olsun)
+// 1. DNS / IPv4 Fix (Render için Hayat Kurtarıcı)
 const dns = require('node:dns');
 try {
     dns.setDefaultResultOrder('ipv4first'); 
@@ -25,27 +25,25 @@ const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 const MAIL_USER = process.env.MAIL_KULLANICI;
 const MAIL_PASS = process.env.MAIL_SIFRE;
 
-// 🔥 OUTLOOK (HOTMAIL) AYARLARI
+// 🔥🔥🔥 KESİN ÇÖZÜM: HAZIR HOTMAIL SERVİSİ 🔥🔥🔥
+// Elle port/host yazmıyoruz. 'hotmail' diyince Nodemailer her şeyi kendi ayarlar.
 const transporter = nodemailer.createTransport({
-    host: "smtp-mail.outlook.com", 
-    port: 587,
-    secure: false, 
+    service: 'hotmail', // outlook.com ve hotmail.com için sihirli kelime
     auth: {
         user: MAIL_USER,
         pass: MAIL_PASS
     },
     tls: {
-        ciphers: 'SSLv3',
-        rejectUnauthorized: false
+        rejectUnauthorized: false // Sertifika nazını çeker
     }
 });
 
-// Bağlantı testi
+// Bağlantı testi (Loglara bak)
 transporter.verify((error, success) => {
     if (error) {
-        console.error("❌ Outlook Bağlantı Hatası:", error); // <-- Bak burası Outlook yazıyor artık
+        console.error("❌ Outlook/Hotmail Bağlantı Hatası:", error);
     } else {
-        console.log("✅ Outlook sunucusu hazır!");
+        console.log("✅ Outlook sunucusu SÜPER HAZIR!");
     }
 });
 
@@ -63,16 +61,22 @@ app.post('/kod-gonder', async (req, res) => {
         const { email } = req.body;
         console.log(`İşlem başlatıldı: ${email}`);
 
+        // 1. Kullanıcı Kontrolü
         const userCheck = await client.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userCheck.rows.length > 0) return res.status(400).json({ error: "Bu mail zaten kayıtlı." });
         
+        // 2. Kod Oluşturma
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         
+        // 3. Veritabanına Yazma
         await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
         await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
 
-        res.json({ success: true, message: "Kod gönderildi." });
+        // 🔥 4. DONMAYI ENGELLEMEK İÇİN HEMEN CEVAP VER 🔥
+        // Mailin gitmesini beklemeden "Başarılı" diyoruz. Böylece site donmaz.
+        res.status(200).json({ success: true, message: "Kod gönderildi." });
 
+        // 5. Maili Arkada Gönder (Hata olsa bile siteyi etkilemez)
         transporter.sendMail({ 
             from: '"Çukurova Kampüs" <' + MAIL_USER + '>', 
             to: email, 
@@ -87,17 +91,20 @@ app.post('/kod-gonder', async (req, res) => {
                     </div>
                 </div>
             ` 
-        }).catch(err => console.error("Mail Hatası:", err));
-
-        console.log("✅ Kod üretildi.");
+        }).then(() => {
+            console.log(`✅ Mail başarıyla gitti: ${email}`);
+        }).catch(err => {
+            console.error("❌ Mail Hatası (Kullanıcıya yansımadı):", err);
+        });
 
     } catch (err) { 
         console.error("❌ Sunucu Hatası:", err);
+        // Sadece eğer hala cevap verilmediyse hata dön
         if (!res.headersSent) res.status(500).json({ error: "Hata oluştu." });
     }
 });
 
-// Diğer fonksiyonlar (Aynı)
+// --- DİĞER FONKSİYONLAR (AYNI) ---
 app.get('/ders-yorumlari/:kod', async (req, res) => { try { const anaYorumlarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND (ust_id = 0 OR ust_id IS NULL) ORDER BY tarih DESC', [req.params.kod]); const cevaplarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.kod]); const birlesmisVeri = anaYorumlarRes.rows.map(ana => ({ ...ana, cevaplar: cevaplarRes.rows.filter(c => c.ust_id === ana.id) })); res.json(birlesmisVeri); } catch(e) { res.json([]); } });
 app.post('/ders-yorum-ekle', async (req, res) => { try { const ustId = parseInt(req.body.ust_id) || 0; await client.query('INSERT INTO ders_yorumlari (ders_kodu, ders_adi, kullanici_adi, yorum_metni, ust_id) VALUES ($1, $2, $3, $4, $5)', [req.body.ders_kodu, req.body.ders_adi, req.body.kullanici_adi, req.body.yorum_metni, ustId]); res.json({ success: true }); } catch(e) { res.status(500).json({ error: "Hata" }); } });
 app.post('/kayit-tamamla', async (req, res) => { try { const { email, password, nickname, code } = req.body; const kodCheck = await client.query("SELECT * FROM verification_codes WHERE email = $1 AND code = $2", [email, code]); if (kodCheck.rows.length === 0) return res.status(400).json({ error: "Kod hatalı." }); const nickCheck = await client.query("SELECT * FROM users WHERE nickname = $1", [nickname]); if (nickCheck.rows.length > 0) return res.status(400).json({ error: "Bu isim alınmış." }); const hash = await bcrypt.hash(password, 10); await client.query("INSERT INTO users (email, password, nickname, role) VALUES ($1, $2, $3, 'ogrenci')", [email, hash, nickname]); await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); res.json({ success: true }); } catch (err) { res.status(500).json({ error: "Hata" }); } });
