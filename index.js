@@ -1,19 +1,11 @@
 require('dotenv').config();
-
-// DNS Ayarı (Render için gerekli)
-const dns = require('node:dns');
-try {
-    dns.setDefaultResultOrder('ipv4first'); 
-} catch (e) {
-    console.log("IPv4 ayarı atlandı.");
-}
-
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+// Nodemailer'ı sildik, yerine yerel https modülünü kullanıyoruz (Duvar delici)
+const https = require('https');
 
 const app = express();
 app.use(cors());
@@ -21,32 +13,9 @@ app.use(express.json());
 
 const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 
-// --- MAİL AYARLARI ---
-const MAIL_USER = process.env.MAIL_KULLANICI;
-const MAIL_PASS = process.env.MAIL_SIFRE;
-
-// 🔥 BREVO (SENDINBLUE) STANDART AYARLARI
-const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,  // Standart port. Brevo burada sorun çıkarmaz.
-    secure: false, 
-    auth: {
-        user: MAIL_USER,
-        pass: MAIL_PASS
-    },
-    tls: {
-        rejectUnauthorized: false
-    }
-});
-
-// Bağlantı testi
-transporter.verify((error, success) => {
-    if (error) {
-        console.error("❌ Brevo Bağlantı Hatası:", error);
-    } else {
-        console.log("✅ Brevo sunucusu SÜPER HAZIR!");
-    }
-});
+// --- API AYARLARI ---
+const BREVO_API_KEY = process.env.MAIL_SIFRE; // xkeysib... ile başlayan anahtar
+const SENDER_EMAIL = process.env.MAIL_KULLANICI; // Brevo'daki mailin
 
 const client = new Client({
     connectionString: process.env.DATABASE_URL,
@@ -54,6 +23,56 @@ const client = new Client({
 });
 
 client.connect().then(() => console.log("✅ Veritabanı Bağlı")).catch(err => console.error("❌ DB Hatası:", err));
+
+// --- ÖZEL FONKSİYON: API İLE MAİL GÖNDERME ---
+function sendEmailViaAPI(toEmail, code) {
+    const data = JSON.stringify({
+        sender: { name: "Çukurova Kampüs", email: SENDER_EMAIL },
+        to: [{ email: toEmail }],
+        subject: "Doğrulama Kodun",
+        htmlContent: `
+            <div style="background:#f4f4f4; padding:20px; font-family:sans-serif;">
+                <div style="background:white; max-width:500px; margin:0 auto; padding:20px; border-radius:10px; text-align:center;">
+                    <h2 style="color:#004aad;">Hoş Geldin!</h2>
+                    <p>Kayıt olmak için doğrulama kodun:</p>
+                    <h1 style="letter-spacing:5px; background:#eee; padding:10px; border-radius:5px;">${code}</h1>
+                    <p style="color:#999; font-size:12px;">Bu kod 5 dakika geçerlidir.</p>
+                </div>
+            </div>
+        `
+    });
+
+    const options = {
+        hostname: 'api.brevo.com',
+        port: 443, // WEB PORTU (Asla engellenmez!)
+        path: '/v3/smtp/email',
+        method: 'POST',
+        headers: {
+            'accept': 'application/json',
+            'api-key': BREVO_API_KEY, // API Anahtarını buraya koyuyoruz
+            'content-type': 'application/json'
+        }
+    };
+
+    const req = https.request(options, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+            if (res.statusCode === 201 || res.statusCode === 200) {
+                console.log(`✅ Mail API ile başarıyla gönderildi: ${toEmail}`);
+            } else {
+                console.error(`❌ Mail API Hatası: ${res.statusCode}`, responseBody);
+            }
+        });
+    });
+
+    req.on('error', (e) => {
+        console.error(`❌ İstek Hatası: ${e.message}`);
+    });
+
+    req.write(data);
+    req.end();
+}
 
 // --- API ENDPOINTLERİ ---
 
@@ -70,27 +89,11 @@ app.post('/kod-gonder', async (req, res) => {
         await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
         await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
 
-        // KULLANICIYI BEKLETMEDEN CEVAP VER
+        // Kullanıcıyı hemen yanıtla
         res.json({ success: true, message: "Kod gönderildi." });
 
-        // Maili gönder
-        transporter.sendMail({ 
-            from: '"Çukurova Kampüs" <cukampus2025@gmail.com>', // Gönderen olarak yine kendi mailin görünür
-            to: email, 
-            subject: 'Doğrulama Kodun', 
-            html: `
-                <div style="background:#f4f4f4; padding:20px; font-family:sans-serif;">
-                    <div style="background:white; max-width:500px; margin:0 auto; padding:20px; border-radius:10px; text-align:center;">
-                        <h2 style="color:#004aad;">Hoş Geldin!</h2>
-                        <p>Kayıt olmak için doğrulama kodun:</p>
-                        <h1 style="letter-spacing:5px; background:#eee; padding:10px; border-radius:5px;">${code}</h1>
-                        <p style="color:#999; font-size:12px;">Bu kod 5 dakika geçerlidir.</p>
-                    </div>
-                </div>
-            ` 
-        }).catch(err => console.error("❌ Mail Hatası:", err));
-
-        console.log("✅ Kod üretildi.");
+        // 🔥 MAİLİ YENİ YÖNTEMLE (API) GÖNDER
+        sendEmailViaAPI(email, code);
 
     } catch (err) { 
         console.error("❌ Sunucu Hatası:", err);
@@ -98,7 +101,7 @@ app.post('/kod-gonder', async (req, res) => {
     }
 });
 
-// Diğer fonksiyonlar (Aynı)
+// --- DİĞERLERİ AYNI ---
 app.get('/ders-yorumlari/:kod', async (req, res) => { try { const anaYorumlarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND (ust_id = 0 OR ust_id IS NULL) ORDER BY tarih DESC', [req.params.kod]); const cevaplarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.kod]); const birlesmisVeri = anaYorumlarRes.rows.map(ana => ({ ...ana, cevaplar: cevaplarRes.rows.filter(c => c.ust_id === ana.id) })); res.json(birlesmisVeri); } catch(e) { res.json([]); } });
 app.post('/ders-yorum-ekle', async (req, res) => { try { const ustId = parseInt(req.body.ust_id) || 0; await client.query('INSERT INTO ders_yorumlari (ders_kodu, ders_adi, kullanici_adi, yorum_metni, ust_id) VALUES ($1, $2, $3, $4, $5)', [req.body.ders_kodu, req.body.ders_adi, req.body.kullanici_adi, req.body.yorum_metni, ustId]); res.json({ success: true }); } catch(e) { res.status(500).json({ error: "Hata" }); } });
 app.post('/kayit-tamamla', async (req, res) => { try { const { email, password, nickname, code } = req.body; const kodCheck = await client.query("SELECT * FROM verification_codes WHERE email = $1 AND code = $2", [email, code]); if (kodCheck.rows.length === 0) return res.status(400).json({ error: "Kod hatalı." }); const nickCheck = await client.query("SELECT * FROM users WHERE nickname = $1", [nickname]); if (nickCheck.rows.length > 0) return res.status(400).json({ error: "Bu isim alınmış." }); const hash = await bcrypt.hash(password, 10); await client.query("INSERT INTO users (email, password, nickname, role) VALUES ($1, $2, $3, 'ogrenci')", [email, hash, nickname]); await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); res.json({ success: true }); } catch (err) { res.status(500).json({ error: "Hata" }); } });
