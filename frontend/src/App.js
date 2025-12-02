@@ -281,7 +281,7 @@ function AnaSayfa() {
   return (
     <div className="main-container">
       <GlobalStyles /> 
-      <div className="beta-text">Beta 0.17</div>
+      <div className="beta-text">Beta 0.18</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
       <div className="hamburger-fixed" style={{

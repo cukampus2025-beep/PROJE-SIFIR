@@ -12,9 +12,9 @@ app.use(express.json());
 
 const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 
-// --- MAİL AYARLARI (OTOMATİK DÜZELTİCİ) ---
+// --- MAİL AYARLARI ---
 const GMAIL_USER = process.env.MAIL_KULLANICI;
-// 🔥 SİHİRLİ DOKUNUŞ: Şifredeki boşlukları otomatik siler
+// Şifredeki boşlukları otomatik silen yapı (Render'a boşluklu girsen de çalışır)
 const GMAIL_PASS = process.env.MAIL_SIFRE ? process.env.MAIL_SIFRE.replace(/\s+/g, '') : "";
 
 const transporter = nodemailer.createTransport({
@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
     auth: { user: GMAIL_USER, pass: GMAIL_PASS }
 });
 
-// Bağlantı testi (Loglarda bunu kontrol et)
+// Bağlantı testi
 transporter.verify((error, success) => {
     if (error) {
         console.error("❌ Mail Sunucusu Hatası:", error);
@@ -42,19 +42,28 @@ client.connect().then(() => console.log("✅ Veritabanı Bağlı")).catch(err =>
 
 // --- API ENDPOINTLERİ ---
 
-// 🔥 1. KOD GÖNDERME
+// 🔥 1. KOD GÖNDERME (HIZLANDIRILMIŞ VERSİYON)
 app.post('/kod-gonder', async (req, res) => {
     try {
         const { email } = req.body;
-        console.log(`Mail gönderiliyor: ${email}`);
+        console.log(`Mail işlem isteği: ${email}`);
 
+        // Kullanıcı var mı kontrol et
         const userCheck = await client.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userCheck.rows.length > 0) return res.status(400).json({ error: "Bu mail zaten kayıtlı." });
         
+        // 6 haneli kodu oluştur
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // Mail gönderimini bekle
-        await transporter.sendMail({ 
+        // 🔥 ÖNCE VERİTABANINA YAZ (Hızlı İşlem)
+        await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
+        await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
+
+        // 🔥 KULLANICIYI BEKLETME, HEMEN CEVAP VER
+        res.json({ success: true, message: "Kod gönderildi." });
+
+        // 🔥 MAİLİ ARKA PLANDA GÖNDER (Await YOK)
+        transporter.sendMail({ 
             from: '"Çukurova Kampüs" <cukampus2025@gmail.com>', 
             to: email, 
             subject: 'Doğrulama Kodun', 
@@ -68,26 +77,27 @@ app.post('/kod-gonder', async (req, res) => {
                     </div>
                 </div>
             ` 
+        }).catch(mailError => {
+            // Mail gitmezse sunucu loguna yaz, ama kullanıcıyı etkileme
+            console.error(`❌ Mail gönderme hatası (${email}):`, mailError);
         });
 
-        await client.query("DELETE FROM verification_codes WHERE email = $1", [email]); 
-        await client.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
-
-        console.log("✅ Mail başarıyla iletildi.");
-        res.json({ success: true, message: "Kod gönderildi." });
+        console.log("✅ Kod üretildi, cevap verildi, mail kuyruğa alındı.");
 
     } catch (err) { 
-        console.error("❌ Mail Gönderilemedi:", err);
-        res.status(500).json({ error: "Mail gönderilemedi. Şifre veya kullanıcı adı hatası olabilir." }); 
+        console.error("❌ Genel Hata:", err);
+        // Eğer veritabanı aşamasında patlarsa hata dön
+        if (!res.headersSent) {
+            res.status(500).json({ error: "İşlem sırasında bir hata oluştu." }); 
+        }
     }
 });
 
-// 🔥 2. YORUMLARI ÇEKME (Girintili Cevap İçin)
+// 🔥 2. YORUMLARI ÇEKME
 app.get('/ders-yorumlari/:kod', async (req, res) => { 
     try {
         const anaYorumlarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND (ust_id = 0 OR ust_id IS NULL) ORDER BY tarih DESC', [req.params.kod]);
         const cevaplarRes = await client.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.kod]);
-        
         const birlesmisVeri = anaYorumlarRes.rows.map(ana => ({
             ...ana,
             cevaplar: cevaplarRes.rows.filter(c => c.ust_id === ana.id)
@@ -145,6 +155,7 @@ app.post('/iletisim-gonder', async (req, res) => { await client.query('INSERT IN
 app.get('/forum/:tur', async (req, res) => { const ana = await client.query('SELECT * FROM forum WHERE tur = $1 AND ust_id = 0 ORDER BY tarih DESC', [req.params.tur]); const cev = await client.query('SELECT * FROM forum WHERE tur = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.tur]); const sonuc = ana.rows.map(s => ({ ...s, cevaplar: cev.rows.filter(c => c.ust_id === s.id) })); res.json(sonuc); });
 app.post('/forum-ekle', async (req, res) => { await client.query('INSERT INTO forum (tur, ust_id, kullanici_adi, mesaj) VALUES ($1, $2, $3, $4)', [req.body.tur, req.body.ust_id||0, req.body.kullanici_adi, req.body.mesaj]); res.json({ success: true }); });
 app.post('/yorum-sil', async (req, res) => { try { const { tur, id, kullanici_adi } = req.body; let tablo = tur === 'ders' ? "ders_yorumlari" : tur === 'yurt' ? "yurt_yorumlari" : "forum"; const kontrol = await client.query(`SELECT * FROM ${tablo} WHERE id = $1`, [id]); if(kontrol.rows.length > 0) { if(kontrol.rows[0].kullanici_adi === kullanici_adi || kullanici_adi === 'baraykanat') { await client.query(`DELETE FROM ${tablo} WHERE id = $1`, [id]); res.json({ success: true }); } else { res.status(403).json({ error: "Yetkisiz." }); } } else { res.status(404).json({ error: "Bulunamadı." }); } } catch (e) { res.status(500).json({ error: "Hata" }); } });
+
 app.get('/admin/tum-veriler', async (req, res) => { const d = await client.query('SELECT * FROM ders_yorumlari ORDER BY tarih DESC LIMIT 50'); const y = await client.query('SELECT * FROM yurt_yorumlari ORDER BY tarih DESC LIMIT 50'); const f = await client.query('SELECT * FROM forum ORDER BY tarih DESC LIMIT 50'); const m = await client.query('SELECT * FROM iletisim_mesajlari ORDER BY tarih DESC'); res.json({ ders: d.rows, yurt: y.rows, forum: f.rows, mesajlar: m.rows }); });
 app.delete('/admin/sil-mesaj/:id', async (req, res) => { await client.query(`DELETE FROM iletisim_mesajlari WHERE id=$1`, [req.params.id]); res.json({ success: true }); });
 app.post('/admin/banla', async (req, res) => { await client.query("UPDATE users SET is_banned = true WHERE nickname = $1", [req.body.nickname]); res.json({ success: true }); });
