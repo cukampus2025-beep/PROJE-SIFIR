@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-// DNS Ayarı (Yine de dursun, garanti olsun)
+// DNS Ayarı (Garanti olsun)
 const dns = require('node:dns');
 try {
     dns.setDefaultResultOrder('ipv4first'); 
@@ -25,17 +25,17 @@ const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 const MAIL_USER = process.env.MAIL_KULLANICI;
 const MAIL_PASS = process.env.MAIL_SIFRE;
 
-// 🔥 OUTLOOK (HOTMAIL) ÖZEL AYARLARI
+// 🔥 OUTLOOK (HOTMAIL) AYARLARI
 const transporter = nodemailer.createTransport({
-    host: "smtp-mail.outlook.com", // Microsoft Sunucusu
-    port: 587,                     // Standart TLS Portu
-    secure: false,                 // 587 için false
+    host: "smtp-mail.outlook.com", 
+    port: 587,
+    secure: false, 
     auth: {
         user: MAIL_USER,
         pass: MAIL_PASS
     },
     tls: {
-        ciphers: 'SSLv3',          // Microsoft'un sevdiği şifreleme türü
+        ciphers: 'SSLv3',
         rejectUnauthorized: false
     }
 });
@@ -43,7 +43,7 @@ const transporter = nodemailer.createTransport({
 // Bağlantı testi
 transporter.verify((error, success) => {
     if (error) {
-        console.error("❌ Outlook Bağlantı Hatası:", error);
+        console.error("❌ Outlook Bağlantı Hatası:", error); // <-- Bak burası Outlook yazıyor artık
     } else {
         console.log("✅ Outlook sunucusu hazır!");
     }
