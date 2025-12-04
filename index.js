@@ -30,10 +30,10 @@ pool.connect()
     })
     .catch(err => console.error("❌ DB Havuz Hatası:", err));
 
-// --- API İLE MAİL GÖNDERME ---
+// --- MAİL GÖNDERME (LOGLAR EKLENDİ) ---
 function sendEmail(to, code) {
     if (!API_KEY || !SENDER_EMAIL) {
-        // console.error("❌ HATA: API Anahtarı eksik!");
+        console.error("❌ HATA: API Anahtarı eksik!");
         return;
     }
     const postData = JSON.stringify({
@@ -56,9 +56,18 @@ function sendEmail(to, code) {
         method: 'POST',
         headers: { 'accept': 'application/json', 'api-key': API_KEY, 'content-type': 'application/json', 'content-length': Buffer.byteLength(postData) }
     };
+    
+    // 🔥 LOGLAR BURAYA EKLENDİ
     const req = https.request(options, (res) => {
-        res.on('data', () => {});
-        res.on('end', () => {});
+        let body = '';
+        res.on('data', (d) => body += d);
+        res.on('end', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+                console.log(`✅ Mail Başarıyla İletildi: ${to}`);
+            } else {
+                console.error(`❌ Mail API Hatası (${res.statusCode}):`, body);
+            }
+        });
     });
     req.on('error', (e) => console.error("❌ İstek Hatası:", e));
     req.write(postData);
@@ -68,6 +77,8 @@ function sendEmail(to, code) {
 app.post('/kod-gonder', async (req, res) => {
     try {
         const { email } = req.body;
+        console.log(`İşlem: ${email}`); // 🔥 BU SATIR GERİ GELDİ
+
         const userCheck = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userCheck.rows.length > 0) return res.status(400).json({ error: "Bu mail kayıtlı." });
         const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -75,7 +86,10 @@ app.post('/kod-gonder', async (req, res) => {
         await pool.query("INSERT INTO verification_codes (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL '5 minutes')", [email, code]);
         res.json({ success: true, message: "Kod gönderildi." });
         sendEmail(email, code);
-    } catch (err) { res.status(500).json({ error: "Hata oluştu." }); }
+    } catch (err) { 
+        console.error("Sunucu Hatası:", err);
+        res.status(500).json({ error: "Hata oluştu." }); 
+    }
 });
 
 // --- DERSLER ---
@@ -134,7 +148,7 @@ app.get('/toplam-yorum-sayisi', async (req, res) => {
     } catch { res.json({ toplam: 0 }); }
 });
 
-// 🔥 YURTLAR GÜNCELLENDİ (GİRİNTİLİ YAPI İÇİN)
+// --- YURTLAR ---
 app.get('/yurt-yorumlari/:yurt', async (req, res) => { 
     try {
         const ana = await pool.query('SELECT * FROM yurt_yorumlari WHERE yurt_adi = $1 AND (ust_id = 0 OR ust_id IS NULL) ORDER BY tarih DESC', [req.params.yurt]); 
@@ -155,28 +169,25 @@ app.post('/iletisim-gonder', async (req, res) => { await pool.query('INSERT INTO
 app.get('/forum/:tur', async (req, res) => { const ana = await pool.query('SELECT * FROM forum WHERE tur = $1 AND ust_id = 0 ORDER BY tarih DESC', [req.params.tur]); const cev = await pool.query('SELECT * FROM forum WHERE tur = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.tur]); const sonuc = ana.rows.map(s => ({ ...s, cevaplar: cev.rows.filter(c => c.ust_id === s.id) })); res.json(sonuc); });
 app.post('/forum-ekle', async (req, res) => { await pool.query('INSERT INTO forum (tur, ust_id, kullanici_adi, mesaj) VALUES ($1, $2, $3, $4)', [req.body.tur, req.body.ust_id||0, req.body.kullanici_adi, req.body.mesaj]); res.json({ success: true }); });
 
-// 🔥🔥 SİLME MANTIĞI YENİLENDİ: YANIT VARSA "SİLİNDİ" YAZAR, YOKSA SİLER 🔥🔥
+// 🔥 SİLME İŞLEMİ (LOGLAMA EKLENDİ)
 app.post('/yorum-sil', async (req, res) => { 
     try { 
         const { tur, id, kullanici_adi } = req.body; 
+        console.log(`Silme İsteği: ${tur} - ID: ${id} - Kim: ${kullanici_adi}`); // LOG
+
         let tablo = tur === 'ders' ? "ders_yorumlari" : tur === 'yurt' ? "yurt_yorumlari" : tur === 'yemek' ? "yemek_yorumlari" : "forum"; 
         
-        // 1. Önce yorumu bul
         const kontrol = await pool.query(`SELECT * FROM ${tablo} WHERE id = $1`, [id]); 
         
         if(kontrol.rows.length > 0) { 
-            // 2. Yetki Kontrolü
             if(kontrol.rows[0].kullanici_adi === kullanici_adi || kullanici_adi === 'baraykanat') { 
                 
-                // 3. Altında yanıt (cevap) var mı kontrol et
                 const yanitKontrol = await pool.query(`SELECT COUNT(*) FROM ${tablo} WHERE ust_id = $1`, [id]);
                 const yanitSayisi = parseInt(yanitKontrol.rows[0].count);
 
                 if (yanitSayisi > 0) {
-                    // 🔥 YANIT VARSA: İçeriği "Silindi" olarak güncelle (Zincir bozulmasın)
                     await pool.query(`UPDATE ${tablo} SET yorum_metni = 'Bu yorum yazar tarafından silindi.', silindi_mi = TRUE WHERE id = $1`, [id]);
                 } else {
-                    // 🔥 YANIT YOKSA: Direkt veritabanından sil
                     await pool.query(`DELETE FROM ${tablo} WHERE id = $1`, [id]); 
                 }
 
@@ -188,7 +199,7 @@ app.post('/yorum-sil', async (req, res) => {
             res.status(404).json({ error: "Bulunamadı." }); 
         } 
     } catch (e) { 
-        console.error(e);
+        console.error("Silme Hatası:", e);
         res.status(500).json({ error: "Hata" }); 
     } 
 });
