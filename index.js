@@ -10,7 +10,6 @@ const jwt = require('jsonwebtoken');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 const GIZLI_ANAHTAR = "cukurova_cok_gizli_anahtar_123";
 
 // --- GÜVENLİ VERİ ÇEKME VE TEMİZLEME ---
@@ -18,7 +17,6 @@ const API_KEY = process.env.MAIL_SIFRE ? process.env.MAIL_SIFRE.trim() : "";
 const SENDER_EMAIL = process.env.MAIL_KULLANICI ? process.env.MAIL_KULLANICI.trim() : "";
 
 // 🔥 DEĞİŞİKLİK: BAĞLANTI HAVUZU (POOL) AYARLARI
-// Bu ayar sayesinde bağlantı kopsa bile otomatik yenisi açılır.
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
@@ -35,7 +33,7 @@ pool.connect()
     })
     .catch(err => console.error("❌ DB Havuz Hatası:", err));
 
-// --- API İLE MAİL GÖNDERME (Senin çalışan kodun) ---
+// --- API İLE MAİL GÖNDERME ---
 function sendEmail(to, code) {
     if (!API_KEY || !SENDER_EMAIL) {
         console.error("❌ HATA: API Anahtarı veya Gönderici Maili eksik!");
@@ -87,13 +85,12 @@ function sendEmail(to, code) {
     req.end();
 }
 
-// --- API ENDPOINT (pool.query ile güncellendi) ---
+// --- API ENDPOINT ---
 app.post('/kod-gonder', async (req, res) => {
     try {
         const { email } = req.body;
         console.log(`İşlem: ${email}`);
 
-        // client.query yerine pool.query kullanıyoruz
         const userCheck = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
         if (userCheck.rows.length > 0) return res.status(400).json({ error: "Bu mail kayıtlı." });
         
@@ -112,12 +109,12 @@ app.post('/kod-gonder', async (req, res) => {
     }
 });
 
-// --- DİĞER FONKSİYONLAR (HEPSİ pool.query OLARAK GÜNCELLENDİ) ---
+// --- DİĞER FONKSİYONLAR ---
 app.get('/ders-yorumlari/:kod', async (req, res) => { try { const anaYorumlarRes = await pool.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND (ust_id = 0 OR ust_id IS NULL) ORDER BY tarih DESC', [req.params.kod]); const cevaplarRes = await pool.query('SELECT * FROM ders_yorumlari WHERE ders_kodu = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.kod]); const birlesmisVeri = anaYorumlarRes.rows.map(ana => ({ ...ana, cevaplar: cevaplarRes.rows.filter(c => c.ust_id === ana.id) })); res.json(birlesmisVeri); } catch(e) { res.json([]); } });
 app.post('/ders-yorum-ekle', async (req, res) => { try { const ustId = parseInt(req.body.ust_id) || 0; await pool.query('INSERT INTO ders_yorumlari (ders_kodu, ders_adi, kullanici_adi, yorum_metni, ust_id) VALUES ($1, $2, $3, $4, $5)', [req.body.ders_kodu, req.body.ders_adi, req.body.kullanici_adi, req.body.yorum_metni, ustId]); res.json({ success: true }); } catch(e) { res.status(500).json({ error: "Hata" }); } });
 app.post('/kayit-tamamla', async (req, res) => { try { const { email, password, nickname, code } = req.body; const kodCheck = await pool.query("SELECT * FROM verification_codes WHERE email = $1 AND code = $2", [email, code]); if (kodCheck.rows.length === 0) return res.status(400).json({ error: "Kod hatalı." }); const nickCheck = await pool.query("SELECT * FROM users WHERE nickname = $1", [nickname]); if (nickCheck.rows.length > 0) return res.status(400).json({ error: "Bu isim alınmış." }); const hash = await bcrypt.hash(password, 10); await pool.query("INSERT INTO users (email, password, nickname, role) VALUES ($1, $2, $3, 'ogrenci')", [email, hash, nickname]); await pool.query("DELETE FROM verification_codes WHERE email = $1", [email]); res.json({ success: true }); } catch (err) { res.status(500).json({ error: "Hata" }); } });
 
-// 🔥 GİRİŞ KISMI (Havuz sistemiyle)
+// 🔥 GİRİŞ KISMI
 app.post('/giris', async (req, res) => { 
     try { 
         const { email, password } = req.body; 
@@ -140,39 +137,64 @@ app.get('/bolumler', async (req, res) => { const r = await pool.query('SELECT DI
 app.get('/hocalar', async (req, res) => { const r = await pool.query("SELECT DISTINCT hoca_adi FROM dersler WHERE hoca_adi != 'Belirtilmemiş' ORDER BY hoca_adi"); res.json(r.rows); });
 app.get('/dersler/:bolum', async (req, res) => { const r = await pool.query('SELECT * FROM dersler WHERE bolum = $1', [req.params.bolum]); res.json(r.rows); });
 app.get('/hoca-dersleri/:hoca', async (req, res) => { const r = await pool.query('SELECT * FROM dersler WHERE hoca_adi = $1', [req.params.hoca]); res.json(r.rows); });
-app.get('/toplam-yorum-sayisi', async (req, res) => { try { const r = await pool.query(`SELECT (SELECT COUNT(*) FROM ders_yorumlari) + (SELECT COUNT(*) FROM yurt_yorumlari) + (SELECT COUNT(*) FROM forum) as toplam`); res.json({ toplam: parseInt(r.rows[0].toplam || 0) }); } catch { res.json({ toplam: 0 }); }});
+
+// 🔥 GÜNCELLENEN TOPLAM SAYI (DÜZELTME: Tablo ismi yemek_yorumlari yapıldı)
+app.get('/toplam-yorum-sayisi', async (req, res) => { 
+    try { 
+        const r = await pool.query(`SELECT 
+            (SELECT COUNT(*) FROM ders_yorumlari) + 
+            (SELECT COUNT(*) FROM yurt_yorumlari) + 
+            (SELECT COUNT(*) FROM forum) +
+            (SELECT COUNT(*) FROM yemek_yorumlari) as toplam`); 
+        res.json({ toplam: parseInt(r.rows[0].toplam || 0) }); 
+    } catch { res.json({ toplam: 0 }); }
+});
+
 app.get('/yurt-yorumlari/:yurt', async (req, res) => { const r = await pool.query('SELECT * FROM yurt_yorumlari WHERE yurt_adi = $1 ORDER BY tarih DESC', [req.params.yurt]); res.json(r.rows); });
 app.post('/yurt-yorum-ekle', async (req, res) => { await pool.query('INSERT INTO yurt_yorumlari (yurt_adi, yorum_metni, kullanici_adi) VALUES ($1, $2, $3)', [req.body.yurt_adi, req.body.yorum_metni, req.body.kullanici_adi]); res.json({ success: true }); });
 app.post('/iletisim-gonder', async (req, res) => { await pool.query('INSERT INTO iletisim_mesajlari (mesaj) VALUES ($1)', [req.body.mesaj]); res.json({ success: true }); });
 app.get('/forum/:tur', async (req, res) => { const ana = await pool.query('SELECT * FROM forum WHERE tur = $1 AND ust_id = 0 ORDER BY tarih DESC', [req.params.tur]); const cev = await pool.query('SELECT * FROM forum WHERE tur = $1 AND ust_id != 0 ORDER BY tarih ASC', [req.params.tur]); const sonuc = ana.rows.map(s => ({ ...s, cevaplar: cev.rows.filter(c => c.ust_id === s.id) })); res.json(sonuc); });
 app.post('/forum-ekle', async (req, res) => { await pool.query('INSERT INTO forum (tur, ust_id, kullanici_adi, mesaj) VALUES ($1, $2, $3, $4)', [req.body.tur, req.body.ust_id||0, req.body.kullanici_adi, req.body.mesaj]); res.json({ success: true }); });
-app.post('/yorum-sil', async (req, res) => { try { const { tur, id, kullanici_adi } = req.body; let tablo = tur === 'ders' ? "ders_yorumlari" : tur === 'yurt' ? "yurt_yorumlari" : "forum"; const kontrol = await pool.query(`SELECT * FROM ${tablo} WHERE id = $1`, [id]); if(kontrol.rows.length > 0) { if(kontrol.rows[0].kullanici_adi === kullanici_adi || kullanici_adi === 'baraykanat') { await pool.query(`DELETE FROM ${tablo} WHERE id = $1`, [id]); res.json({ success: true }); } else { res.status(403).json({ error: "Yetkisiz." }); } } else { res.status(404).json({ error: "Bulunamadı." }); } } catch (e) { res.status(500).json({ error: "Hata" }); } });
-app.get('/admin/tum-veriler', async (req, res) => { const d = await pool.query('SELECT * FROM ders_yorumlari ORDER BY tarih DESC LIMIT 50'); const y = await pool.query('SELECT * FROM yurt_yorumlari ORDER BY tarih DESC LIMIT 50'); const f = await pool.query('SELECT * FROM forum ORDER BY tarih DESC LIMIT 50'); const m = await pool.query('SELECT * FROM iletisim_mesajlari ORDER BY tarih DESC'); res.json({ ders: d.rows, yurt: y.rows, forum: f.rows, mesajlar: m.rows }); });
+
+// 🔥 GÜNCELLENEN SİLME FONKSİYONU (Yemekhane Eklendi)
+app.post('/yorum-sil', async (req, res) => { 
+    try { 
+        const { tur, id, kullanici_adi } = req.body; 
+        // Yemekhane tablosu buraya EKLENDİ 👇
+        let tablo = tur === 'ders' ? "ders_yorumlari" : tur === 'yurt' ? "yurt_yorumlari" : tur === 'yemek' ? "yemek_yorumlari" : "forum"; 
+        
+        const kontrol = await pool.query(`SELECT * FROM ${tablo} WHERE id = $1`, [id]); 
+        if(kontrol.rows.length > 0) { 
+            if(kontrol.rows[0].kullanici_adi === kullanici_adi || kullanici_adi === 'baraykanat') { 
+                await pool.query(`DELETE FROM ${tablo} WHERE id = $1`, [id]); 
+                res.json({ success: true }); 
+            } else { res.status(403).json({ error: "Yetkisiz." }); } 
+        } else { res.status(404).json({ error: "Bulunamadı." }); } 
+    } catch (e) { res.status(500).json({ error: "Hata" }); } 
+});
+
+// 🔥 GÜNCELLENEN ADMIN VERİLERİ (Yemekhane Eklendi)
+app.get('/admin/tum-veriler', async (req, res) => { 
+    const d = await pool.query('SELECT * FROM ders_yorumlari ORDER BY tarih DESC LIMIT 50'); 
+    const y = await pool.query('SELECT * FROM yurt_yorumlari ORDER BY tarih DESC LIMIT 50'); 
+    const f = await pool.query('SELECT * FROM forum ORDER BY tarih DESC LIMIT 50'); 
+    const m = await pool.query('SELECT * FROM iletisim_mesajlari ORDER BY tarih DESC');
+    // Yemek yorumları burada çekiliyor (DÜZELTİLDİ) 👇
+    const yem = await pool.query('SELECT * FROM yemek_yorumlari ORDER BY created_at DESC LIMIT 50'); 
+    
+    res.json({ ders: d.rows, yurt: y.rows, forum: f.rows, mesajlar: m.rows, yemek: yem.rows }); 
+});
+
 app.delete('/admin/sil-mesaj/:id', async (req, res) => { await pool.query(`DELETE FROM iletisim_mesajlari WHERE id=$1`, [req.params.id]); res.json({ success: true }); });
 app.post('/admin/banla', async (req, res) => { await pool.query("UPDATE users SET is_banned = true WHERE nickname = $1", [req.body.nickname]); res.json({ success: true }); });
 
-// 🔥 YEMEKHANE YORUM SİSTEMİ 🔥
-
-// 1. Yorumları Getir
+// 🔥 YEMEKHANE YORUM SİSTEMİ
 app.get('/yemek-yorumlari', async (req, res) => {
     try {
-        const { tarih } = req.query; // ?tarih=04.12.2025
-        
-        const anaYorumlar = await pool.query(
-            "SELECT * FROM yemek_yorumlari WHERE tarih_str = $1 AND ust_id = 0 ORDER BY created_at DESC", 
-            [tarih]
-        );
-        
-        const cevaplar = await pool.query(
-            "SELECT * FROM yemek_yorumlari WHERE tarih_str = $1 AND ust_id != 0 ORDER BY created_at ASC", 
-            [tarih]
-        );
-
-        const sonuc = anaYorumlar.rows.map(ana => ({
-            ...ana,
-            cevaplar: cevaplar.rows.filter(c => c.ust_id === ana.id)
-        }));
-
+        const { tarih } = req.query; 
+        const anaYorumlar = await pool.query("SELECT * FROM yemek_yorumlari WHERE tarih_str = $1 AND ust_id = 0 ORDER BY created_at DESC", [tarih]);
+        const cevaplar = await pool.query("SELECT * FROM yemek_yorumlari WHERE tarih_str = $1 AND ust_id != 0 ORDER BY created_at ASC", [tarih]);
+        const sonuc = anaYorumlar.rows.map(ana => ({ ...ana, cevaplar: cevaplar.rows.filter(c => c.ust_id === ana.id) }));
         res.json(sonuc);
     } catch (err) {
         console.error(err);
@@ -180,17 +202,13 @@ app.get('/yemek-yorumlari', async (req, res) => {
     }
 });
 
-// 2. Yorum Ekle (🔥 DÜZELTİLDİ: created_at eklendi)
 app.post('/yemek-yorum-ekle', async (req, res) => {
     try {
         const { tarih, kullanici_adi, yorum, ust_id } = req.body;
-        
-        // NOW() fonksiyonu ile şu anki zamanı veritabanına kaydediyoruz
         await pool.query(
             "INSERT INTO yemek_yorumlari (tarih_str, kullanici_adi, yorum_metni, ust_id, created_at) VALUES ($1, $2, $3, $4, NOW())",
             [tarih, kullanici_adi, yorum, ust_id || 0]
         );
-        
         res.json({ success: true });
     } catch (err) {
         console.error("Yemek Yorum Ekleme Hatası:", err);

@@ -34,8 +34,6 @@ const GlobalStyles = () => (
 );
 
 // --- YARDIMCI BİLEŞENLER ---
-
-// 🔥 DÜZELTME BURADA: MobilMenu ARTIK DIŞARIDA! (Klavye kapanmaz)
 const MobilMenu = ({ menuler, kullanici, navigate, setMobilMenuAcik, iletisimAcik, setIletisimAcik, mesaj, setMesaj, mesajGonder }) => (
     <div className="mobile-menu-overlay" onClick={()=>setMobilMenuAcik(false)}>
         <div className="mobile-menu-content" onClick={e=>e.stopPropagation()} style={{display:'flex', flexDirection:'column', justifyContent:'space-between'}}>
@@ -58,13 +56,7 @@ const MobilMenu = ({ menuler, kullanici, navigate, setMobilMenuAcik, iletisimAci
                     <button onClick={()=>setIletisimAcik(true)} className="msg-btn">Mesaj Yaz</button> 
                 ) : (
                     <div>
-                        {/* Klavye sorunu için input burada */}
-                        <textarea 
-                            className="msg-input" 
-                            value={mesaj} 
-                            onChange={e=>setMesaj(e.target.value)} 
-                            placeholder="Mesajını yaz..."
-                        />
+                        <textarea className="msg-input" value={mesaj} onChange={e=>setMesaj(e.target.value)} placeholder="Mesajını yaz..." />
                         <button onClick={mesajGonder} className="send-btn" style={{width:'100%'}}>Gönder</button>
                     </div>
                 )}
@@ -114,14 +106,12 @@ function GirisModal({ kapali, kapat, tip }) {
     setHata(""); setBilgi("Kod gönderiliyor..."); setYukleniyor(true);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
-
     try { 
         const res = await fetch(`${API_URL}/kod-gonder`, { 
             method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email}), signal: controller.signal 
         });
         clearTimeout(timeoutId); 
         const data = await res.json();
-        
         if (data.success) { setBilgi(""); setKayitAsama(2); } 
         else { setHata(data.error || "Hata oluştu."); setBilgi(""); } 
     } catch(e) { 
@@ -170,10 +160,11 @@ function GirisModal({ kapali, kapat, tip }) {
   );
 }
 
+// 🔥 GÜNCELLENMİŞ ADMIN PANELİ (Yemekhane Eklendi)
 const AdminPanel = () => {
-    const [veriler, setVeriler] = useState({ ders: [], yurt: [], forum: [], mesajlar: [] });
+    const [veriler, setVeriler] = useState({ ders: [], yurt: [], forum: [], mesajlar: [], yemek: [] });
     const veriCek = () => { 
-        fetch(`${API_URL}/admin/tum-veriler`).then(res => res.json()).then(data => setVeriler(data)).catch(() => setVeriler({ ders: [], yurt: [], forum: [], mesajlar: [] }));
+        fetch(`${API_URL}/admin/tum-veriler`).then(res => res.json()).then(data => setVeriler(data)).catch(() => setVeriler({ ders: [], yurt: [], forum: [], mesajlar: [], yemek: [] }));
     };
     useEffect(() => { veriCek(); }, []);
     
@@ -234,6 +225,16 @@ const AdminPanel = () => {
                             <div style={{display:'flex'}}><button onClick={()=>banla(x.kullanici_adi)} className="btn-ban">BAN</button><button onClick={()=>sil('forum',x.id)} className="btn-sil">SİL</button></div>
                         </div>
                     ))}
+                </div>
+                {/* YEMEKHANE KISMI EKLENDİ */}
+                <div className="admin-box">
+                    <h3 style={{marginTop:0, borderBottom:'2px solid #ddd', paddingBottom:10}}>🍽️ Yemekhane ({veriler.yemek ? veriler.yemek.length : 0})</h3>
+                    {veriler.yemek && veriler.yemek.map(x => (
+                        <div key={x.id} className="admin-item">
+                            <div style={{fontSize:'0.9em'}}><b>{x.kullanici_adi}</b> <span style={{color:'#666'}}>({x.tarih_str})</span>:<br/> {x.yorum_metni}</div>
+                            <div style={{display:'flex'}}><button onClick={()=>banla(x.kullanici_adi)} className="btn-ban">BAN</button><button onClick={()=>sil('yemek',x.id)} className="btn-sil">SİL</button></div>
+                        </div>
+                    ))}
                 </div> 
             </div> 
         </div> 
@@ -282,7 +283,7 @@ function AnaSayfa() {
   return (
     <div className="main-container">
       <GlobalStyles /> 
-      <div className="beta-text">Beta 0.35</div>
+      <div className="beta-text">Beta 0.36</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
       <div className="hamburger-fixed" style={{
@@ -375,7 +376,7 @@ function YurtlarSayfasi() {
   const kendiYorumunuSil = (id) => { if(window.confirm("Silmek istiyor musun?")) fetch(`${API_URL}/yorum-sil`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tur:'yurt', id, kullanici_adi:kullanici.nickname})}).then(()=>{yurtSec(seciliYurt);}); };
   return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={() => seciliYurt ? setSeciliYurt(null) : navigate('/')} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliYurt ? 'Yurtlar' : seciliYurt}</h2> </div> {!seciliYurt ? ( <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yurtListesi.map((yurt, index) => ( <div key={index} onClick={() => yurtSec(yurt)} style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', color:'#00796b', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between' }}> <span>🛏️ {yurt}</span> <span style={{color:'#ccc'}}>❯</span> </div> ))} </div> ) : ( <div> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e0f7fa', borderRadius: '10px' }}> <textarea rows="3" placeholder="Bu yurt hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#00796b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Gönder</button> </div> <h3>Yorumlar ({yorumlar.length})</h3> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{ color: '#333' }}>{y.yorum_metni}</div> <div style={{ fontSize: '0.7em', color: '#999', marginTop: '5px' }}>{new Date(y.tarih).toLocaleDateString('tr-TR')}</div> </div> )) } </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> )} </div> ); }
 
-// 🔥 YEMEKHANE SAYFASI (Yeşil Işıklı & Yorumlu & DÜZELTİLMİŞ)
+// 🔥 YEMEKHANE SAYFASI (Yeşil Işıklı & Yorumlu & GİZLİLİK EKLENMİŞ)
 function YemekhaneSayfasi() {
   const navigate = useNavigate();
   const [seciliTarih, setSeciliTarih] = useState(null);
@@ -406,7 +407,6 @@ function YemekhaneSayfasi() {
     { tarih: "26.12.2025", gun: "Cuma", yemek: "Tavuk Haşlama, Soslu Makarna, Marul Salatası, Puding" }
   ];
 
-  // Bugünün tarihini formatla (GG.AA.YYYY)
   const tarihFormatla = (date) => {
       const d = String(date.getDate()).padStart(2, '0');
       const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -419,7 +419,6 @@ function YemekhaneSayfasi() {
     const user = localStorage.getItem('user');
     if (user) setKullanici(JSON.parse(user));
     
-    // Otomatik bugünü seç, yoksa ilk günü seç
     const bugunMenusu = yemekListesi.find(x => x.tarih === bugun);
     if (bugunMenusu) tarihSec(bugunMenusu);
     else if(yemekListesi.length > 0) tarihSec(yemekListesi[0]);
@@ -437,7 +436,6 @@ function YemekhaneSayfasi() {
       .catch(() => setYorumlar([]));
   };
 
-  // 🔥 GÜNCELLENEN GONDER FONKSİYONU
   const gonder = (ustId = 0, metin) => {
     if (!kullanici) { alert("Giriş yapmalısın!"); return; }
     if (!metin.trim()) return;
@@ -460,7 +458,6 @@ function YemekhaneSayfasi() {
       setYeniYorum("");
       setCevapMetni("");
       setCevapKutusu(null);
-      // Veritabanı gecikmesi için 500ms bekle sonra çek
       setTimeout(() => {
           yorumCek(seciliTarih.tarih);
       }, 500);
@@ -498,7 +495,6 @@ function YemekhaneSayfasi() {
                         cursor: 'pointer',
                         textAlign: 'center',
                         border: aktifMi ? '2px solid #004aad' : '1px solid #ddd',
-                        // 🔥 BUGÜN İSE YEŞİL, SEÇİLİ İSE MAVİ, YOKSA BEYAZ
                         backgroundColor: bugunMu ? '#2ecc71' : (aktifMi ? '#e3f2fd' : 'white'), 
                         color: bugunMu ? 'white' : '#333',
                         fontWeight: bugunMu || aktifMi ? 'bold' : 'normal',
@@ -523,54 +519,63 @@ function YemekhaneSayfasi() {
 
               <h3 style={{borderBottom:'1px solid #eee', paddingBottom:10}}>Yorumlar ({yorumlar.reduce((acc, curr) => acc + 1 + (curr.cevaplar ? curr.cevaplar.length : 0), 0)})</h3>
               
+              {/* GİRİŞ YAPANLAR YORUM YAPABİLİR VE GÖREBİLİR */}
               {kullanici ? (
-                  <div style={{display:'flex', gap:10, marginBottom:20}}>
-                      <input 
-                        type="text" 
-                        placeholder="Yemek nasıldı?" 
-                        value={yeniYorum} 
-                        onChange={e=>setYeniYorum(e.target.value)}
-                        style={{flex:1, padding:10, borderRadius:8, border:'1px solid #ddd'}}
-                      />
-                      <button onClick={()=>gonder(0, yeniYorum)} style={{padding:'10px 20px', background:'#004aad', color:'white', border:'none', borderRadius:8, fontWeight:'bold', cursor:'pointer'}}>Gönder</button>
-                  </div>
+                  <>
+                    <div style={{display:'flex', gap:10, marginBottom:20}}>
+                        <input 
+                            type="text" 
+                            placeholder="Yemek nasıldı?" 
+                            value={yeniYorum} 
+                            onChange={e=>setYeniYorum(e.target.value)}
+                            style={{flex:1, padding:10, borderRadius:8, border:'1px solid #ddd'}}
+                        />
+                        <button onClick={()=>gonder(0, yeniYorum)} style={{padding:'10px 20px', background:'#004aad', color:'white', border:'none', borderRadius:8, fontWeight:'bold', cursor:'pointer'}}>Gönder</button>
+                    </div>
+                    
+                    <div style={{display:'flex', flexDirection:'column', gap:15}}>
+                        {yorumlar.map(y => (
+                            <div key={y.id} style={{padding:15, background:'white', borderRadius:8, border:'1px solid #eee'}}>
+                                <div style={{display:'flex', justifyContent:'space-between', marginBottom:5}}>
+                                    <strong style={{color:'#004aad'}}>{y.kullanici_adi}</strong>
+                                    {kullanici && (kullanici.nickname === y.kullanici_adi || kullanici.nickname === 'baraykanat') && <button onClick={()=>kendiYorumunuSil(y.id)} style={{border:'none', background:'none', cursor:'pointer'}}>🗑️</button>}
+                                </div>
+                                <div style={{marginBottom:10}}>{y.yorum_metni}</div>
+                                
+                                {kullanici && (
+                                    <button 
+                                        onClick={()=>{setCevapKutusu(cevapKutusu === y.id ? null : y.id); setCevapMetni(`@${y.kullanici_adi} `)}} 
+                                        style={{background:'none', border:'none', color:'#666', fontSize:'0.9em', cursor:'pointer', padding:0}}
+                                    >💬 Yanıtla</button>
+                                )}
+
+                                <div style={{marginTop:10, paddingLeft:15, borderLeft:'3px solid #eee'}}>
+                                    {y.cevaplar && y.cevaplar.map(c => (
+                                        <div key={c.id} style={{background:'#f9f9f9', padding:8, borderRadius:5, marginBottom:5, fontSize:'0.95em'}}>
+                                            <strong>{c.kullanici_adi}: </strong>{c.yorum_metni}
+                                        </div>
+                                    ))}
+                                    
+                                    {cevapKutusu === y.id && (
+                                        <div style={{display:'flex', gap:5, marginTop:10}}>
+                                            <input type="text" value={cevapMetni} onChange={e=>setCevapMetni(e.target.value)} style={{flex:1, padding:5}} />
+                                            <button onClick={()=>gonder(y.id, cevapMetni)} style={{background:'#28a745', color:'white', border:'none', padding:'5px 10px', borderRadius:4}}>OK</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                  </>
               ) : (
-                  <p style={{color:'#666', textAlign:'center', padding:10, background:'#f9f9f9', borderRadius:8}}>Yorum yapmak için giriş yapmalısın.</p>
+                // GİRİŞ YAPMAYANLARA GİZLİ KUTU
+                <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> 
+                    <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> 
+                    <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> 
+                    <p style={{color:'#666', marginBottom:'20px'}}>Yorumları görmek ve yazmak için giriş yapmalısın.</p>
+                    <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> 
+                </div> 
               )}
-
-              <div style={{display:'flex', flexDirection:'column', gap:15}}>
-                  {yorumlar.map(y => (
-                      <div key={y.id} style={{padding:15, background:'white', borderRadius:8, border:'1px solid #eee'}}>
-                          <div style={{display:'flex', justifyContent:'space-between', marginBottom:5}}>
-                              <strong style={{color:'#004aad'}}>{y.kullanici_adi}</strong>
-                              {kullanici && (kullanici.nickname === y.kullanici_adi || kullanici.nickname === 'baraykanat') && <button onClick={()=>kendiYorumunuSil(y.id)} style={{border:'none', background:'none', cursor:'pointer'}}>🗑️</button>}
-                          </div>
-                          <div style={{marginBottom:10}}>{y.yorum_metni}</div>
-                          
-                          {kullanici && (
-                              <button 
-                                onClick={()=>{setCevapKutusu(cevapKutusu === y.id ? null : y.id); setCevapMetni(`@${y.kullanici_adi} `)}} 
-                                style={{background:'none', border:'none', color:'#666', fontSize:'0.9em', cursor:'pointer', padding:0}}
-                              >💬 Yanıtla</button>
-                          )}
-
-                          <div style={{marginTop:10, paddingLeft:15, borderLeft:'3px solid #eee'}}>
-                              {y.cevaplar && y.cevaplar.map(c => (
-                                  <div key={c.id} style={{background:'#f9f9f9', padding:8, borderRadius:5, marginBottom:5, fontSize:'0.95em'}}>
-                                      <strong>{c.kullanici_adi}: </strong>{c.yorum_metni}
-                                  </div>
-                              ))}
-                              
-                              {cevapKutusu === y.id && (
-                                  <div style={{display:'flex', gap:5, marginTop:10}}>
-                                      <input type="text" value={cevapMetni} onChange={e=>setCevapMetni(e.target.value)} style={{flex:1, padding:5}} />
-                                      <button onClick={()=>gonder(y.id, cevapMetni)} style={{background:'#28a745', color:'white', border:'none', padding:'5px 10px', borderRadius:4}}>OK</button>
-                                  </div>
-                              )}
-                          </div>
-                      </div>
-                  ))}
-              </div>
           </div>
       )}
     </div>
