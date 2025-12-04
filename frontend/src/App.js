@@ -275,13 +275,14 @@ function AnaSayfa() {
     { id: 3, title: 'Anonim', icon: '🎭', link: '/anonimler' },
     { id: 4, title: 'Yurtlar', icon: '🛏️', link: '/yurtlar' },
     { id: 5, title: 'Soru-Cevap', icon: '❓', link: '/sorular' },
-    { id: 6, title: 'Topluluklar', icon: '🤝', link: '/topluluklar' },
+    { id: 6, title: 'Yemekhane', icon: '🍲', link: '/yemekhane' },
+    { id: 7, title: 'Topluluklar', icon: '🤝', link: '/topluluklar' },
   ];
 
   return (
     <div className="main-container">
       <GlobalStyles /> 
-      <div className="beta-text">Beta 0.32</div>
+      <div className="beta-text">Beta 0.35</div>
       <GirisModal kapali={!modalAcik} kapat={() => setModalAcik(false)} tip={modalTip} />
       
       <div className="hamburger-fixed" style={{
@@ -331,7 +332,7 @@ function AnaSayfa() {
             ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 15px 0' }}>Hoş Geldin</h2> <p style={{ color: '#555', marginBottom: '30px', fontSize: '15px' }}>Yorum yapmak için giriş yapmalısın.</p> <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '220px', margin: '0 auto' }}> <button onClick={() => { setModalTip('giris'); setModalAcik(true); }} className="login-btn">Giriş Yap</button> <button onClick={() => { setModalTip('kayit'); setModalAcik(true); }} className="register-btn">Kayıt Ol</button> </div> </> ) : ( <> <h2 style={{ color: '#004aad', fontSize: '26px', margin: '0 0 10px 0' }}>{kullanici.nickname}</h2> <p style={{ color: '#555', marginBottom: '30px' }}>Giriş yaptın.</p> <button onClick={cikisYap} className="logout-btn">Çıkış Yap</button> </> )}
          
             <div className="donation-bar-container">
-            <p className="donation-text">2025 31 Aralık tarihine kadar her 200 yorum <br/> için Darüşşafaka Cemiyetine 200 lira bağış!</p>
+            <p className="donation-text">2026 31 Ocak tarihine kadar her 200 yorum <br/> için Darüşşafaka Cemiyetine 200 lira bağış!</p>
             <div className="progress-bg"><div className="progress-fill" style={{ width: `${barYuzdesi}%` }}></div></div>
             <small style={{ color: '#777' }}>{toplamYorum} / 600 Yorum</small>
           </div>
@@ -373,6 +374,208 @@ function YurtlarSayfasi() {
   const yorumGonder = () => { if (!yeniYorum.trim()) return; fetch(`${API_URL}/yurt-yorum-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ yurt_adi: seciliYurt, yorum_metni: yeniYorum, kullanici_adi: kullanici.nickname }) }).then(() => { setYeniYorum(""); yurtSec(seciliYurt); }); };
   const kendiYorumunuSil = (id) => { if(window.confirm("Silmek istiyor musun?")) fetch(`${API_URL}/yorum-sil`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tur:'yurt', id, kullanici_adi:kullanici.nickname})}).then(()=>{yurtSec(seciliYurt);}); };
   return ( <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}> <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}> <button onClick={() => seciliYurt ? setSeciliYurt(null) : navigate('/')} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', marginRight: '15px' }}>⬅️</button> <h2 style={{ margin: 0, color: '#333' }}>{!seciliYurt ? 'Yurtlar' : seciliYurt}</h2> </div> {!seciliYurt ? ( <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yurtListesi.map((yurt, index) => ( <div key={index} onClick={() => yurtSec(yurt)} style={{ padding: '20px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', color:'#00796b', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display:'flex', justifyContent:'space-between' }}> <span>🛏️ {yurt}</span> <span style={{color:'#ccc'}}>❯</span> </div> ))} </div> ) : ( <div> {kullanici ? ( <> <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#e0f7fa', borderRadius: '10px' }}> <textarea rows="3" placeholder="Bu yurt hakkında ne düşünüyorsun?" value={yeniYorum} onChange={(e) => setYeniYorum(e.target.value)} style={{ width: '95%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', marginBottom: '10px' }} /> <button onClick={yorumGonder} style={{ backgroundColor: '#00796b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Gönder</button> </div> <h3>Yorumlar ({yorumlar.length})</h3> <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}> {yorumlar.map((y) => ( <div key={y.id} style={{ padding: '15px', backgroundColor: 'white', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}> <div style={{fontWeight:'bold', color:'#004aad', marginBottom:'5px', display:'flex', justifyContent:'space-between'}}>{y.kullanici_adi} {kullanici.nickname===y.kullanici_adi && <button onClick={()=>kendiYorumunuSil(y.id)} style={{background:'none', border:'none', cursor:'pointer'}}>🗑️</button>}</div> <div style={{ color: '#333' }}>{y.yorum_metni}</div> <div style={{ fontSize: '0.7em', color: '#999', marginTop: '5px' }}>{new Date(y.tarih).toLocaleDateString('tr-TR')}</div> </div> )) } </div> </> ) : ( <div style={{ padding: '30px', backgroundColor: '#fff', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}> <span style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}>🔒</span> <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Yorumlar Gizli</h3> <button onClick={() => navigate('/')} style={{ padding: '12px 25px', backgroundColor: '#004aad', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Giriş Ekranına Git</button> </div> )} </div> )} </div> ); }
+
+// 🔥 YEMEKHANE SAYFASI (Yeşil Işıklı & Yorumlu & DÜZELTİLMİŞ)
+function YemekhaneSayfasi() {
+  const navigate = useNavigate();
+  const [seciliTarih, setSeciliTarih] = useState(null);
+  const [yorumlar, setYorumlar] = useState([]);
+  const [yeniYorum, setYeniYorum] = useState("");
+  const [cevapKutusu, setCevapKutusu] = useState(null);
+  const [cevapMetni, setCevapMetni] = useState("");
+  const [kullanici, setKullanici] = useState(null);
+
+  // 📋 SENİN GÖNDERDİĞİN LİSTE (26 Aralık'a kadar)
+  const yemekListesi = [
+    { tarih: "04.12.2025", gun: "Perşembe", yemek: "Tavuk Pane+Parmak patates, Mantar Kavurma, Ezogelin Çorba, Marul Salatası, Meyve" },
+    { tarih: "05.12.2025", gun: "Cuma", yemek: "Sini Köfte, Peynirli Makarna, Yoğurt, Meyve" },
+    { tarih: "08.12.2025", gun: "Pazartesi", yemek: "Etli Taze Fasulye, Mercimekli Bulgur Pilavı, Yoğurt, Meyve" },
+    { tarih: "09.12.2025", gun: "Salı", yemek: "Izgara Fırın Baget, Tel Şehriyeli Pirinç Pilavı, Cacık, Meyve" },
+    { tarih: "10.12.2025", gun: "Çarşamba", yemek: "Etli Nohut, Şehriyeli Bulgur Pilavı, Yoğurt, Aşure" },
+    { tarih: "11.12.2025", gun: "Perşembe", yemek: "Fırın Balık (Uskumru), Mercimek Çorba, Marul Salatası, Puding" },
+    { tarih: "12.12.2025", gun: "Cuma", yemek: "Soslu Dalyan Köfte, Peynirli Makarna, Şalgam, Meyve" },
+    { tarih: "15.12.2025", gun: "Pazartesi", yemek: "Arap Tava, Şehriyeli Bulgur Pilavı, Şalgam, Meyve" },
+    { tarih: "16.12.2025", gun: "Salı", yemek: "Soslu Fırın Tavuk, Tel Şehriyeli Pirinç Pilavı, Ayran, Türlü Turşu" },
+    { tarih: "17.12.2025", gun: "Çarşamba", yemek: "Bahçevan Kebap, Mercimekli Bulgur Pilavı, Yoğurt, Meyve" },
+    { tarih: "18.12.2025", gun: "Perşembe", yemek: "Et Kavurma, Nohutlu Pirinç Pilavı, Cacık, Meyve" },
+    { tarih: "19.12.2025", gun: "Cuma", yemek: "İzmir Köfte, Soslu Makarna, Marul Salatası, Puding" },
+    { tarih: "22.12.2025", gun: "Pazartesi", yemek: "Etli Taze Fasulye, Mercimekli Bulgur Pilavı, Yoğurt, Türlü Turşu" },
+    { tarih: "23.12.2025", gun: "Salı", yemek: "Soslu Fırın Tavuk, Bahar Pilavı, Şalgam, Meyve" },
+    { tarih: "24.12.2025", gun: "Çarşamba", yemek: "Etli Kuru Fasulye, Şehriyeli Bulgur Pilavı, Yoğurt, Türlü Turşu" },
+    { tarih: "25.12.2025", gun: "Perşembe", yemek: "Püreli Kebap, Nohutlu Pirinç Pilavı, Ayran, Meyve" },
+    { tarih: "26.12.2025", gun: "Cuma", yemek: "Tavuk Haşlama, Soslu Makarna, Marul Salatası, Puding" }
+  ];
+
+  // Bugünün tarihini formatla (GG.AA.YYYY)
+  const tarihFormatla = (date) => {
+      const d = String(date.getDate()).padStart(2, '0');
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = date.getFullYear();
+      return `${d}.${m}.${y}`;
+  };
+  const bugun = tarihFormatla(new Date());
+
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) setKullanici(JSON.parse(user));
+    
+    // Otomatik bugünü seç, yoksa ilk günü seç
+    const bugunMenusu = yemekListesi.find(x => x.tarih === bugun);
+    if (bugunMenusu) tarihSec(bugunMenusu);
+    else if(yemekListesi.length > 0) tarihSec(yemekListesi[0]);
+  }, []);
+
+  const tarihSec = (menuItem) => {
+    setSeciliTarih(menuItem);
+    yorumCek(menuItem.tarih);
+  };
+
+  const yorumCek = (tarih) => {
+    fetch(`${API_URL}/yemek-yorumlari?tarih=${tarih}`)
+      .then(res => res.json())
+      .then(data => setYorumlar(data || []))
+      .catch(() => setYorumlar([]));
+  };
+
+  // 🔥 GÜNCELLENEN GONDER FONKSİYONU
+  const gonder = (ustId = 0, metin) => {
+    if (!kullanici) { alert("Giriş yapmalısın!"); return; }
+    if (!metin.trim()) return;
+
+    fetch(`${API_URL}/yemek-yorum-ekle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tarih: seciliTarih.tarih,
+        kullanici_adi: kullanici.nickname,
+        yorum: metin,
+        ust_id: ustId
+      })
+    })
+    .then((res) => {
+        if (!res.ok) throw new Error("Gönderim hatası");
+        return res.json();
+    })
+    .then(() => {
+      setYeniYorum("");
+      setCevapMetni("");
+      setCevapKutusu(null);
+      // Veritabanı gecikmesi için 500ms bekle sonra çek
+      setTimeout(() => {
+          yorumCek(seciliTarih.tarih);
+      }, 500);
+    })
+    .catch((err) => {
+        console.error(err);
+        alert("Yorum gönderilemedi.");
+    });
+  };
+
+  const kendiYorumunuSil = (id) => {
+      if(window.confirm("Silmek istiyor musun?")) 
+      fetch(`${API_URL}/yorum-sil`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tur:'yemek', id, kullanici_adi:kullanici.nickname})}).then(()=>{yorumCek(seciliTarih.tarih);});
+  };
+
+  return (
+    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{display:'flex', alignItems:'center', marginBottom:20}}>
+          <button onClick={() => navigate('/')} style={{border:'none', background:'none', fontSize:24, cursor:'pointer', marginRight:10}}>⬅️</button>
+          <h2 style={{margin:0, color:'#333'}}>Yemekhane Menüsü</h2>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px', marginBottom: '30px' }}>
+        {yemekListesi.map((item, index) => {
+            const aktifMi = seciliTarih && seciliTarih.tarih === item.tarih;
+            const bugunMu = item.tarih === bugun; 
+            
+            return (
+                <div 
+                    key={index} 
+                    onClick={() => tarihSec(item)}
+                    style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        border: aktifMi ? '2px solid #004aad' : '1px solid #ddd',
+                        // 🔥 BUGÜN İSE YEŞİL, SEÇİLİ İSE MAVİ, YOKSA BEYAZ
+                        backgroundColor: bugunMu ? '#2ecc71' : (aktifMi ? '#e3f2fd' : 'white'), 
+                        color: bugunMu ? 'white' : '#333',
+                        fontWeight: bugunMu || aktifMi ? 'bold' : 'normal',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+                    }}
+                >
+                    <div style={{fontSize:'0.8em'}}>{item.tarih.slice(0,5)}</div>
+                    <div style={{fontSize:'0.9em'}}>{item.gun}</div>
+                </div>
+            );
+        })}
+      </div>
+
+      {seciliTarih && (
+          <div style={{marginBottom:'40px'}}>
+              <div style={{backgroundColor:'#fff3cd', padding:'20px', borderRadius:'12px', border:'1px solid #ffeeba', textAlign:'center', marginBottom:'20px'}}>
+                  <h3 style={{margin:'0 0 10px 0', color:'#856404'}}>{seciliTarih.tarih} {seciliTarih.gun}</h3>
+                  <p style={{fontSize:'1.2em', color:'#333', margin:0, lineHeight:'1.6'}}>
+                      🍽️ {seciliTarih.yemek}
+                  </p>
+              </div>
+
+              <h3 style={{borderBottom:'1px solid #eee', paddingBottom:10}}>Yorumlar ({yorumlar.reduce((acc, curr) => acc + 1 + (curr.cevaplar ? curr.cevaplar.length : 0), 0)})</h3>
+              
+              {kullanici ? (
+                  <div style={{display:'flex', gap:10, marginBottom:20}}>
+                      <input 
+                        type="text" 
+                        placeholder="Yemek nasıldı?" 
+                        value={yeniYorum} 
+                        onChange={e=>setYeniYorum(e.target.value)}
+                        style={{flex:1, padding:10, borderRadius:8, border:'1px solid #ddd'}}
+                      />
+                      <button onClick={()=>gonder(0, yeniYorum)} style={{padding:'10px 20px', background:'#004aad', color:'white', border:'none', borderRadius:8, fontWeight:'bold', cursor:'pointer'}}>Gönder</button>
+                  </div>
+              ) : (
+                  <p style={{color:'#666', textAlign:'center', padding:10, background:'#f9f9f9', borderRadius:8}}>Yorum yapmak için giriş yapmalısın.</p>
+              )}
+
+              <div style={{display:'flex', flexDirection:'column', gap:15}}>
+                  {yorumlar.map(y => (
+                      <div key={y.id} style={{padding:15, background:'white', borderRadius:8, border:'1px solid #eee'}}>
+                          <div style={{display:'flex', justifyContent:'space-between', marginBottom:5}}>
+                              <strong style={{color:'#004aad'}}>{y.kullanici_adi}</strong>
+                              {kullanici && (kullanici.nickname === y.kullanici_adi || kullanici.nickname === 'baraykanat') && <button onClick={()=>kendiYorumunuSil(y.id)} style={{border:'none', background:'none', cursor:'pointer'}}>🗑️</button>}
+                          </div>
+                          <div style={{marginBottom:10}}>{y.yorum_metni}</div>
+                          
+                          {kullanici && (
+                              <button 
+                                onClick={()=>{setCevapKutusu(cevapKutusu === y.id ? null : y.id); setCevapMetni(`@${y.kullanici_adi} `)}} 
+                                style={{background:'none', border:'none', color:'#666', fontSize:'0.9em', cursor:'pointer', padding:0}}
+                              >💬 Yanıtla</button>
+                          )}
+
+                          <div style={{marginTop:10, paddingLeft:15, borderLeft:'3px solid #eee'}}>
+                              {y.cevaplar && y.cevaplar.map(c => (
+                                  <div key={c.id} style={{background:'#f9f9f9', padding:8, borderRadius:5, marginBottom:5, fontSize:'0.95em'}}>
+                                      <strong>{c.kullanici_adi}: </strong>{c.yorum_metni}
+                                  </div>
+                              ))}
+                              
+                              {cevapKutusu === y.id && (
+                                  <div style={{display:'flex', gap:5, marginTop:10}}>
+                                      <input type="text" value={cevapMetni} onChange={e=>setCevapMetni(e.target.value)} style={{flex:1, padding:5}} />
+                                      <button onClick={()=>gonder(y.id, cevapMetni)} style={{background:'#28a745', color:'white', border:'none', padding:'5px 10px', borderRadius:4}}>OK</button>
+                                  </div>
+                              )}
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      )}
+    </div>
+  );
+}
 
 // 🔥 DÜZELTİLMİŞ DERS DETAY SAYFASI (GİRİNTİLİ CEVAP SİSTEMİ)
 function DersDetay() {
@@ -549,6 +752,7 @@ function App() {
         <Route path="/sorular" element={<ForumSayfasi tur="soru" baslik="❓ Soru - Cevap" />} />
         <Route path="/anonimler" element={<ForumSayfasi tur="anonim" baslik="🎭 Burada Anonimsin" anonimMi={true} />} />
         <Route path="/yurtlar" element={<YurtlarSayfasi />} />
+        <Route path="/yemekhane" element={<YemekhaneSayfasi />} />
         <Route path="/topluluklar" element={<Topluluklar />} />
         <Route path="/tavsiyeler" element={<BosSayfa baslik="Tavsiyeler" />} />
         <Route path="/admin" element={<AdminPanel />} />
